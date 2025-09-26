@@ -1,8 +1,3 @@
-[general]
-# Tvinga Streamlit att använda en stabil Python-version
-# Byt till 3.11 eller 3.12
-python = "3.12"
-
 [theme]
 # Basen är mörk
 base = "dark" 
