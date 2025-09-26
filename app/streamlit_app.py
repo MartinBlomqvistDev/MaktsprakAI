@@ -225,8 +225,8 @@ def load_all_resources():
     # FIX: Lexikonet laddas från det gamla repot ('maktsprak_bert'), 
     # men med korrekt sökväg till undermappen
     lexicon_local_path = hf_hub_download(
-        repo_id="MartinBlomqvist/maktsprak_bert", # <--- DETTA ÄR DET GAMLA REPOT
-        filename="data/processed/politisk_ton_lexikon.csv",
+        repo_id="MartinBlomqvist/maktsprak_bert",
+        filename="politisk_ton_lexikon.csv",
         revision="main"
     )
     # Returnera som Path-objekt för kompatibilitet med din befintliga kod
