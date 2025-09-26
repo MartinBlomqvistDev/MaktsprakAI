@@ -222,18 +222,15 @@ def load_all_resources():
     # Använder den uppdaterade funktionen från model.py
     model, tokenizer = load_model_and_tokenizer() 
     
-    # NYTT: Ladda ner lexikonet från Hugging Face
-    # Sparar den temporärt på servern och returnerar sökvägen
+    # FIX: Lexikonet laddas från det gamla repot ('maktsprak_bert'), 
+    # men med korrekt sökväg till undermappen
     lexicon_local_path = hf_hub_download(
-        repo_id=MODEL_NAME_OR_PATH,  
-        filename="politisk_ton_lexikon.csv",
+        repo_id="MartinBlomqvist/maktsprak_bert", # <--- DETTA ÄR DET GAMLA REPOT
+        filename="data/processed/politisk_ton_lexikon.csv",
         revision="main"
     )
     # Returnera som Path-objekt för kompatibilitet med din befintliga kod
     return model, tokenizer, Path(lexicon_local_path)
-
-# Uppdatera anropet
-model, tokenizer, LEXICON_PATH = load_all_resources()
 
 # =====================
 # Gemensam och cachad funktion för all evaluering

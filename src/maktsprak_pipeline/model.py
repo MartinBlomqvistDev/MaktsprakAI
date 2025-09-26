@@ -4,7 +4,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch.nn.functional import softmax
 
 # Din Hugging Face-repo-sträng
-MODEL_NAME_OR_PATH = "MartinBlomqvist/maktsprak_bert/data/models/party_classifier"
+MODEL_NAME_OR_PATH = "MartinBlomqvist/maktsprak_classifier_clean"
 
 # Definiera partierna i den ordning modellen förväntar sig dem
 # Denna ordning måste matcha 'LABELS' från träningen
