@@ -162,13 +162,13 @@ def fetch_party_articles(articles_per_party: int = 1):
                 full_content = get_full_article_text(link)
                 
                 if not full_content or len(full_content) < 250:
-                    debug_log.append(f"     - MISSLYCKADES: Skrapan hittade för lite text (<250 tecken).")
+                    debug_log.append(f"    - MISSLYCKADES: Skrapan hittade för lite text (<250 tecken).")
                     continue
                 if is_unwanted_content(title, full_content):
-                    debug_log.append(f"     - MISSLYCKADES: Innehållet flaggades som 'oönskat'.")
+                    debug_log.append(f"    - MISSLYCKADES: Innehållet flaggades som 'oönskat'.")
                     continue
                 
-                debug_log.append(f"     - OK: Artikeln godkändes.")
+                debug_log.append(f"    - OK: Artikeln godkändes.")
                 found_for_party_count += 1
                 all_valid_articles.append({ "title": title, "link": link, "content": full_content, "true_party": party })
 
@@ -232,6 +232,9 @@ def load_all_resources():
     # Returnera som Path-objekt för kompatibilitet med din befintliga kod
     return model, tokenizer, Path(lexicon_local_path)
 
+# KORRIGERING: Återställ globala variabler så att alla flikar fungerar (FIX 1)
+model, tokenizer, LEXICON_PATH = load_all_resources()
+
 # =====================
 # Gemensam och cachad funktion för all evaluering
 # =====================
@@ -246,6 +249,9 @@ def get_data_signature():
 
 @st.cache_data(show_spinner="Värmer upp AI-modellen...")
 def run_live_evaluation(articles_per_party: int = 5):
+    # KORRIGERING: Vi behåller den globala versionen, men tar bort anropet HÄR
+    # model, tokenizer, _ = load_all_resources()
+
     # Steg 1: Hämta artiklar (använder befintlig cachad funktion)
     fetch_results = fetch_party_articles(articles_per_party=articles_per_party)
     articles_to_analyze = fetch_results.get("articles", [])
@@ -257,6 +263,7 @@ def run_live_evaluation(articles_per_party: int = 5):
     results = []
     for article in articles_to_analyze:
         cleaned_for_model = clean_text(article['content'])
+        # Använder nu de globala model/tokenizer (som laddades i toppen)
         party_probs = predict_party(model, tokenizer, [cleaned_for_model])
         predicted_party = max(party_probs[0].items(), key=lambda x: x[1])[0]
         results.append({
@@ -285,25 +292,25 @@ def welcome_page():
     st.markdown("""
         <style>
         .news-box {
-            border: 1px solid #555;          /* En tunn grå ram */
-            border-radius: 10px;             /* Mjukt rundade hörn */
-            padding: 15px;                   /* Lite luft inuti rutan */
-            background-color: transparent;   /* Transparent bakgrund, eller välj en färg t.ex. #1E1E2A */
-            margin-bottom: 20px;             /* Lite utrymme under rutan */
+            border: 1px solid #555;           /* En tunn grå ram */
+            border-radius: 10px;              /* Mjukt rundade hörn */
+            padding: 15px;                    /* Lite luft inuti rutan */
+            background-color: transparent;    /* Transparent bakgrund, eller välj en färg t.ex. #1E1E2A */
+            margin-bottom: 20px;              /* Lite utrymme under rutan */
         }
         .news-box h3 {
-            margin-top: 0;                   /* Tar bort extra utrymme ovanför rubriken */
+            margin-top: 0;                    /* Tar bort extra utrymme ovanför rubriken */
             margin-bottom: 10px;
-            font-size: 1.25em;               /* En lagom stor rubrik */
+            font-size: 1.25em;                /* En lagom stor rubrik */
         }
         .news-box ul {
-            list-style-type: none;           /* Tar bort prickarna i listan */
-            padding-left: 0;                 /* Tar bort indraget */
+            list-style-type: none;            /* Tar bort prickarna i listan */
+            padding-left: 0;                  /* Tar bort indraget */
             margin-bottom: 0;
         }
         .news-box li {
-            margin-bottom: 8px;              /* Lite avstånd mellan varje nyhetsrad */
-            font-size: 0.9em;                /* Något mindre text för nyheterna */
+            margin-bottom: 8px;               /* Lite avstånd mellan varje nyhetsrad */
+            font-size: 0.9em;                 /* Något mindre text för nyheterna */
         }
         </style>
     """, unsafe_allow_html=True)
@@ -453,7 +460,7 @@ elif page == "Partiprediktion":
             with st.spinner("Beräknar…"):
                 cleaned_text = clean_text(user_text)
                 party_probs = predict_party(model, tokenizer, [cleaned_text])
-                party, prob = max(party_probs[0].items(), key=lambda x: x[1])
+                party, prob = max(party_probs[0].items(), key=lambda x: x[1])[0]
             st.success(f"**Predikterat parti:** {party} ({prob*100:.1f}% säkerhet)")
             fig = px.bar(x=PARTY_ORDER, y=[party_probs[0].get(p, 0) for p in PARTY_ORDER], labels={"x": "Parti", "y": "Sannolikhet"}, text=[f"{party_probs[0].get(p, 0)*100:.1f}%" for p in PARTY_ORDER])
             st.plotly_chart(fig, width='stretch')
@@ -609,8 +616,9 @@ elif page == "Historik":
     }
     
     # Hämta alla unika kategorier för filtret
-    # ÄNDRING: Använder den cachade lexikon-sökvägen
-    lex_df_temp = pd.read_csv(LEXICON_PATH)
+    # KORRIGERING (FIX 2): Ladda lexikonet via Path-objektet
+    with open(LEXICON_PATH, 'r') as f:
+        lex_df_temp = pd.read_csv(f)
     ton_columns = lex_df_temp['kategori'].unique().tolist()
     
     # Låt användaren välja VILKEN KATEGORI de vill följa över tid
@@ -645,6 +653,7 @@ elif page == "Historik":
                     
                     # Steg 4: Lägg till tidsperioden
                     period_profile['Period'] = period_name
+                    period_profile['Period_Sort'] = list(time_periods.keys()).index(period_name) # Lägger till sort-key
                     all_results.append(period_profile)
 
     if not all_results:
@@ -658,7 +667,6 @@ elif page == "Historik":
 
         # --- FÅ KORREKT ORDNADE TIDSBLOCK (ÄLDST TILL VÄNSTER, IDAG TILL HÖGER) ---
         ordered_periods = list(time_periods.keys()) 
-        ordered_periods.reverse() 
         
         # --- VISUALISERING: Linjediagram (Line Chart) ---
         fig = px.line(
