@@ -51,4 +51,4 @@ def predict_party(model, tokenizer, texts):
         # Mappa sannolikheterna till rätt partinamn baserat på vår nya id2label
         results.append({id2label[i]: prob for i, prob in enumerate(probs)})
         
-    return resultsgi
+    return results
