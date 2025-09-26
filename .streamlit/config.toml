@@ -14,3 +14,9 @@ secondaryBackgroundColor = "#242436"
 # Ljus textfärg
 textColor = "#F0F0F0" 
 font = "sans serif"
+
+
+[general]
+# Tvinga Streamlit att använda en stabil Python-version
+# Byt till 3.11 eller 3.12
+python = "3.11"
