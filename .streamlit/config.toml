@@ -1,0 +1,16 @@
+[theme]
+# Basen är mörk
+base = "dark" 
+
+# Skarp orange/röd för energi och uppmärksamhet
+primaryColor = "#FF4B4B" 
+
+# Väldigt mörk, neutral bakgrund
+backgroundColor = "#101018" 
+
+# Mörk sektionsfärg för sidebar etc.
+secondaryBackgroundColor = "#242436" 
+
+# Ljus textfärg
+textColor = "#F0F0F0" 
+font = "sans serif"

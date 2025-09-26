@@ -1,0 +1,58 @@
+# ======================================================
+# Data & ML
+# ======================================================
+pandas>=2.0,<3.0
+numpy>=1.25,<2.0
+scikit-learn>=1.3,<2.0
+
+# PyTorch (CPU/GPU-kompatibel)
+torch>=2.8.0,<2.9
+torchvision>=0.23.0,<0.24
+torchaudio>=2.8.0,<2.9
+triton>=3.4.0,<4.0
+
+# Hugging Face & NLP
+transformers>=4.44,<5.0
+huggingface-hub>=0.25,<0.26
+datasets>=2.14,<3.0
+sentence-transformers>=5.1,<6.0
+sentencepiece>=0.1.99,<0.2
+tokenizers>=0.19.1,<0.20
+peft>=0.17.1,<0.18
+psycopg2-binary
+
+# ======================================================
+# ETL & HTTP
+# ======================================================
+requests>=2.31,<3.0
+pdfplumber>=0.11,<0.12
+tqdm>=4.66,<5.0
+sqlite3; python_version < "3.12"  # Python 3.12 har inbyggt sqlite3
+
+# ======================================================
+# Streamlit & Visualization
+# ======================================================
+streamlit>=1.26,<3.0
+altair>=5.0,<6.0
+plotly>=5.15,<6.0
+wordcloud>=1.9,<2.0
+matplotlib>=3.8,<4.0
+seaborn>=0.13,<0.15
+pydeck>=0.8,<1.0
+statsmodel
+calplot
+streamlit-option-menu
+feedparser
+beautifulsoup4
+requests
+
+# ======================================================
+# Logging & Testing
+# ======================================================
+loguru>=0.7,<1.0
+pytest>=7.4,<9.0
+
+# ======================================================
+# Optional / Training Enhancements
+# ======================================================
+wandb>=0.21,<0.22  # för offline/online tracking

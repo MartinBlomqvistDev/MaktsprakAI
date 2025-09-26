@@ -1,0 +1,57 @@
+# ----------------------------------------------------
+# 1. VIRTUELLA MILJÖER & PYTHON ARTEFAKTER
+# ----------------------------------------------------
+.venv/
+venv/
+env/
+
+# Python cache och kompilerade filer
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# ----------------------------------------------------
+# 2. DATA SCIENCE & MODELL-ARTEFAKTER (MÅSTE IGNORERAS)
+# ----------------------------------------------------
+
+data/raw/*
+data/raw/**
+*.pdf
+
+# Databaser och mappar (KRITISK KORRIGERING)
+data/db/               # IGNORERAR HELA MAPPARNA data/db/
+data/db/maktsprakai.db
+*.db                   # IGNORERAR ALLA filer med .db
+*.sqlite
+
+# Lokalt sparade modeller och temporära filer från träning
+*.pt
+*.bin
+*.pkl
+*.safetensors
+data/models/
+/.env    
+
+# ----------------------------------------------------
+# 3. STREAMLIT & CLOUD ARTEFAKTER
+# ----------------------------------------------------
+
+.streamlit/credentials.toml
+.streamlit/secrets.toml
+.streamlit/cache/
+
+# Temporära filer från molntjänster
+tmp/
+st_cache/
+
+# ----------------------------------------------------
+# 4. OS- OCH IDE-FILER
+# ----------------------------------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Loggfiler
+*.log
