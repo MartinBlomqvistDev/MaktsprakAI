@@ -27,7 +27,7 @@ psycopg2-binary
 requests>=2.31,<3.0
 pdfplumber>=0.11,<0.12
 tqdm>=4.66,<5.0
-sqlite3; python_version < "3.12"  # Python 3.12 har inbyggt sqlite3
+python-dotenv  # NYTT: För att hantera .env-filen lokalt
 
 # ======================================================
 # Streamlit & Visualization
@@ -39,12 +39,11 @@ wordcloud>=1.9,<2.0
 matplotlib>=3.8,<4.0
 seaborn>=0.13,<0.15
 pydeck>=0.8,<1.0
-statsmodel
+statsmodels  # KORRIGERAD
 calplot
 streamlit-option-menu
 feedparser
 beautifulsoup4
-requests
 
 # ======================================================
 # Logging & Testing
@@ -55,4 +54,4 @@ pytest>=7.4,<9.0
 # ======================================================
 # Optional / Training Enhancements
 # ======================================================
-wandb>=0.21,<0.22  # för offline/online tracking
+wandb>=0.21,<0.22
