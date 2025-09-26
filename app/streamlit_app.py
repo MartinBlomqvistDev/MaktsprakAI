@@ -615,10 +615,7 @@ elif page == "Historik":
         "Senaste 10 åren": (today - timedelta(days=365 * 10), today) 
     }
     
-    # Hämta alla unika kategorier för filtret
-    # KORRIGERING (FIX 2): Ladda lexikonet via Path-objektet
-    with open(LEXICON_PATH, 'r') as f:
-        lex_df_temp = pd.read_csv(f)
+    lex_df_temp = pd.read_csv(LEXICON_PATH)
     ton_columns = lex_df_temp['kategori'].unique().tolist()
     
     # Låt användaren välja VILKEN KATEGORI de vill följa över tid
