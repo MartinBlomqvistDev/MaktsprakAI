@@ -31,11 +31,13 @@ def load_model_and_tokenizer(device=None):
     return model, tokenizer
 
 def predict_party(model, tokenizer, texts):
-    # Denna funktion behöver inga ändringar
+    # Hämta den aktiva enheten
     device = next(model.parameters()).device
     results = []
     
-    id2label = model.config.id2label
+    # FIX: Mappa manuellt utifrån den hardkodade PARTIES-listan
+    # (Ersätter den kraschande raden: id2label = model.config.id2label)
+    id2label = {i: party for i, party in enumerate(PARTIES)} 
     
     for text in texts:
         # Skicka texten direkt till tokenizer utan egen förbehandling
@@ -46,7 +48,7 @@ def predict_party(model, tokenizer, texts):
             logits = model(**inputs).logits
             probs = softmax(logits, dim=1).squeeze().cpu().tolist()
         
-        # Mappa sannolikheterna till rätt partinamn baserat på modellens egen konfiguration
+        # Mappa sannolikheterna till rätt partinamn baserat på vår nya id2label
         results.append({id2label[i]: prob for i, prob in enumerate(probs)})
         
-    return results
+    return resultsgi
