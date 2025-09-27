@@ -41,7 +41,7 @@ from src.maktsprak_pipeline.db import (
     insert_tweet
 )
 from src.maktsprak_pipeline.nlp import apply_ton_lexicon, combined_stopwords, clean_text
-from src.maktsprak_pipeline.model import load_model_and_tokenizer, preprocess_text
+from src.maktsprak_pipeline.model import load_model_and_tokenizer, predict_party
 
 # =====================
 # App-inställningar
@@ -218,7 +218,7 @@ def run_live_evaluation(articles_per_party: int = 5):
 
     results = []
     for article in articles_to_analyze:
-        cleaned_for_model = preprocess_text(article['content'])
+        cleaned_for_model = clean_text(article['content'])  # <-- Ändrat här
         party_probs = predict_party(model, tokenizer, [cleaned_for_model])
         predicted_party = max(party_probs[0].items(), key=lambda x: x[1])[0]
         results.append({
