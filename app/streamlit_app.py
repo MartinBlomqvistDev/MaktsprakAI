@@ -40,7 +40,7 @@ from src.maktsprak_pipeline.db import (
     insert_speech,
     insert_tweet
 )
-from src.maktsprak_pipeline.nlp import apply_ton_lexicon, combined_stochastics
+from src.maktsprak_pipeline.nlp import apply_ton_lexicon, combined_stopwords, clean_text
 from src.maktsprak_pipeline.model import load_model_and_tokenizer, preprocess_text
 
 # =====================
@@ -63,7 +63,7 @@ PAGE_OPTIONS = ["Om projektet", "Partiprediktion", "Språkbruk & Retorik", "Eval
 # =====================
 def preprocess_for_wordcloud(text_blob: str, min_length: int = 3) -> str:
     words = re.sub(r'[^a-zA-ZåäöÅÄÖ\s]', '', text_blob).lower().split()
-    filtered_words = [word for word in words if word not in combined_stochastics['stopwords'] and len(word) >= min_length]
+    filtered_words = [word for word in words if word not in combined_stopwords and len(word) >= min_length]
     return " ".join(filtered_words)
 
 @st.cache_data(ttl=900)
