@@ -29,6 +29,7 @@ requests>=2.31,<3.0
 pdfplumber>=0.11,<0.12
 tqdm>=4.66,<5.0
 python-dotenv  # NYTT: För att hantera .env-filen lokalt
+tenacity
 
 # ======================================================
 # Streamlit & Visualization

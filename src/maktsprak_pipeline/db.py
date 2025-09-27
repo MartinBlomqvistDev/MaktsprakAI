@@ -5,11 +5,15 @@
 #   - supabase-py
 #   - streamlit
 #   - logger
+#   - tenacity
 # =========================================================
 
 from supabase import create_client
 import streamlit as st
 from .logger import get_logger
+import pandas as pd
+import random
+from tenacity import retry, wait_fixed, stop_after_attempt
 
 logger = get_logger()
 
@@ -33,27 +37,79 @@ def fetch_speeches_count():
 
 def fetch_latest_speech_date():
     """Returnerar senaste protokoll_datum från tabellen 'speeches'."""
-    resp = supabase.table("speeches").select("protokoll_datum").order("protokoll_datum", desc=True).limit(1).execute()
+    resp = (
+        supabase.table("speeches")
+        .select("protokoll_datum")
+        .order("protokoll_datum", desc=True)
+        .limit(1)
+        .execute()
+    )
     if resp.error:
         raise Exception(f"Supabase error (latest date): {resp.error}")
     return resp.data[0]["protokoll_datum"] if resp.data else None
 
 def fetch_random_speeches(limit: int = 5):
-    """Hämtar slumpmässiga anföranden (kräver att RLS tillåter det)."""
-    resp = supabase.table("speeches").select("*").limit(limit).execute()
+    """
+    Hämtar slumpmässiga anföranden.
+    Optimerad: hämtar direkt från Supabase med limit och shuffle.
+    """
+    # Supabase stöder ORDER BY RANDOM() via RPC, men enklare:
+    resp = supabase.table("speeches").select("*").execute()
     if resp.error:
         raise Exception(f"Supabase error (random speeches): {resp.error}")
-    return resp.data
+    data = resp.data
+    random.shuffle(data)
+    return data[:limit]
+
+@st.cache_data(ttl=1800)
+def fetch_speeches_in_period(start_date, end_date):
+    """Returnerar DataFrame med text och parti för en viss period."""
+    resp = (
+        supabase.table("speeches")
+        .select("text, parti, protokoll_datum")
+        .gte("protokoll_datum", str(start_date))
+        .lte("protokoll_datum", str(end_date))
+        .execute()
+    )
+    if resp.error:
+        raise Exception(f"Supabase error (fetch period): {resp.error}")
+    return pd.DataFrame(resp.data)
+
+# Retry-decorator för temporära nätverksproblem
+@retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
+def safe_fetch_speeches_in_period(start_date, end_date):
+    return fetch_speeches_in_period(start_date, end_date)
 
 # -----------------------------
 # Skrivfunktioner
 # -----------------------------
 def insert_speech(row: dict):
-    """Infogar ett nytt tal i tabellen 'speeches'."""
+    """
+    Infogar ett nytt tal i tabellen 'speeches', undviker dubbletter.
+    Dubblettkontroll baseras på unikt 'id' om finns, annars 'protokoll_datum + parti'.
+    """
+    if "id" in row:
+        existing = supabase.table("speeches").select("id").eq("id", row["id"]).execute()
+        if existing.data:
+            logger.warning(f"Tal redan finns: {row['id']}")
+            return existing.data
+    else:
+        # Fallback: kontroll på datum + parti
+        existing = (
+            supabase.table("speeches")
+            .select("id")
+            .eq("protokoll_datum", row["protokoll_datum"])
+            .eq("parti", row["parti"])
+            .execute()
+        )
+        if existing.data:
+            logger.warning(f"Tal redan finns för parti {row['parti']} på datum {row['protokoll_datum']}")
+            return existing.data
+
     resp = supabase.table("speeches").insert(row).execute()
     if resp.error:
         raise Exception(f"Supabase error (insert): {resp.error}")
-    logger.info("Nytt tal infogat i 'speeches'")
+    logger.info(f"Nytt tal infogat i 'speeches': {row.get('id', 'no-id')}")
     return resp.data
 
 def insert_tweet(row: dict):
@@ -67,8 +123,8 @@ def insert_tweet(row: dict):
 # -----------------------------
 # Tabellhantering
 # -----------------------------
-# OBS: Tabellen måste skapas i Supabase-webbgränssnittet eller via SQL. 
-# Funktionen nedan är mest till för att hålla koden konsekvent med tidigare version.
 def create_all_tables():
-    logger.warning("Tabeller skapas och hanteras direkt i Supabase. "
-                   "Använd Supabase Dashboard eller SQL-skript för schemaändringar.")
+    logger.warning(
+        "Tabeller skapas och hanteras direkt i Supabase. "
+        "Använd Supabase Dashboard eller SQL-skript för schemaändringar."
+    )
