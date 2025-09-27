@@ -19,7 +19,7 @@ import feedparser
 from bs4 import BeautifulSoup
 import requests
 # NY IMPORT: För att ladda ner filer från Hugging Face
-from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download, snapshot_download # Lade till snapshot_download
 
 plt.rcParams['font.family'] = 'sans-serif'
 
@@ -223,10 +223,10 @@ def load_all_resources():
     model, tokenizer = load_model_and_tokenizer() 
     
     # FIX: Lexikonet laddas från det gamla repot ('maktsprak_bert'), 
-    # men med korrekt sökväg till undermappen
+    # men med korrekt sökväg till ROTEN
     lexicon_local_path = hf_hub_download(
         repo_id="MartinBlomqvist/maktsprak_bert",
-        filename="politisk_ton_lexikon.csv",
+        filename="politisk_ton_lexikon.csv", # <--- FIX: INGEN UNDERMAPP
         revision="main"
     )
     # Returnera som Path-objekt för kompatibilitet med din befintliga kod
@@ -264,7 +264,7 @@ def run_live_evaluation(articles_per_party: int = 5):
     for article in articles_to_analyze:
         cleaned_for_model = clean_text(article['content'])
         # Använder nu de globala model/tokenizer (som laddades i toppen)
-        party_probs = predict_party(model, tokenizer, [cleaned_for_model])
+        party_probs = predict_party(model, tokenizer, [cleaned_for_mod el])
         predicted_party = max(party_probs[0].items(), key=lambda x: x[1])[0]
         results.append({
             "Titel": article['title'], 
@@ -615,6 +615,8 @@ elif page == "Historik":
         "Senaste 10 åren": (today - timedelta(days=365 * 10), today) 
     }
     
+    # Hämta alla unika kategorier för filtret
+    # KORRIGERING: Använder pandas.read_csv direkt med Path-objektet (FIX 2)
     lex_df_temp = pd.read_csv(LEXICON_PATH)
     ton_columns = lex_df_temp['kategori'].unique().tolist()
     

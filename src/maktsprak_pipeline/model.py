@@ -1,6 +1,6 @@
 # src/maktsprak_pipeline/model.py
 import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoConfig # <-- LADE TILL AutoConfig
 from torch.nn.functional import softmax
 
 # Din Hugging Face-repo-sträng
@@ -16,14 +16,16 @@ def load_model_and_tokenizer(device=None):
     """
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    # Uppdatera print-texten för att visa att den laddar från HF
+    
     print(f"Laddar modell och tokenizer från Hugging Face sökväg: {MODEL_NAME_OR_PATH}")
     
-    # Ladda allt i ett svep. Transformers hämtar filerna från MODEL_NAME_OR_PATH.
-    # VIKTIGT: Använd AutoTokenizer/AutoModel för att ladda från Hugging Face
+    # FIX 1: Tvinga laddning av config separat för robusthet
+    config = AutoConfig.from_pretrained(MODEL_NAME_OR_PATH)
+    
+    # Ladda allt i ett svep. 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
-    model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME_OR_PATH)
+    # VIKTIGT: Skicka med config till modellen för att säkerställa korrekt laddning
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME_OR_PATH, config=config)
     
     model.to(device)
     model.eval()
@@ -35,8 +37,7 @@ def predict_party(model, tokenizer, texts):
     device = next(model.parameters()).device
     results = []
     
-    # FIX: Mappa manuellt utifrån den hardkodade PARTIES-listan
-    # (Ersätter den kraschande raden: id2label = model.config.id2label)
+    # FIX 2: Använder PARTIES-listan direkt för mappning (löser model.config.id2label-felet)
     id2label = {i: party for i, party in enumerate(PARTIES)} 
     
     for text in texts:
@@ -51,4 +52,5 @@ def predict_party(model, tokenizer, texts):
         # Mappa sannolikheterna till rätt partinamn baserat på vår nya id2label
         results.append({id2label[i]: prob for i, prob in enumerate(probs)})
         
+    # FIX 3: Rättar stavfelet från 'return resultsgi' till 'return results'
     return results
