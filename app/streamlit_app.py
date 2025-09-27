@@ -438,63 +438,97 @@ elif page == "Partiprediktion":
 
 elif page == "Språkbruk & Retorik":
     st.header("Jämför partiernas retorik")
-    start_date, end_date = select_quick_date_range()
+    
+    import datetime
+    today = datetime.date.today()
+    
+    # --- Försök med senaste 7 dagarna ---
+    start_date = today - datetime.timedelta(days=7)
+    end_date = today
+    
+    st.info(f"Visar tal från {start_date} till {end_date}")
+    
     with st.spinner("Hämtar och analyserar data…"):
         df = fetch_speeches_in_period(start_date, end_date)
-
+        
+        # --- Fallback: senaste 30 dagarna om tomt ---
+        if df.empty:
+            start_date = today - datetime.timedelta(days=30)
+            st.info(f"Inga tal de senaste 7 dagarna, visar istället {start_date} till {end_date}")
+            df = fetch_speeches_in_period(start_date, end_date)
+    
     if df.empty:
         st.warning("Kunde inte hitta någon data alls i databasen.")
     else:
+        # Ordna partier
         df['parti'] = pd.Categorical(df['parti'], categories=PARTY_ORDER, ordered=True)
-        # ÄNDRING: Använder den cachade lexikon-sökvägen
+        
+        # Lexikonbaserad tonanalys
         df_ton = apply_ton_lexicon(df, text_col="text", lexicon_path=LEXICON_PATH)
-        ton_columns = [col for col in df_ton.columns if col not in ['text','parti','date']]
+        ton_columns = [col for col in df_ton.columns if col not in ['text','parti','protokoll_datum']]
+        
         retorik_profil = df_ton.groupby('parti', observed=False)[ton_columns].mean().reindex(PARTY_ORDER).dropna()
         retorik_sammansattning = retorik_profil.div(retorik_profil.sum(axis=1), axis=0) * 100
+
+        # --- Plots ---
         tab1, tab2 = st.tabs(["Retoriskt fingeravtryck", "Rankning per kategori"])
+        
         with tab1:
             st.subheader("Partiernas retoriska fingeravtryck")
             df_plot = retorik_sammansattning.reset_index().melt(id_vars='parti', var_name='Kategori', value_name='Andel (%)')
-            fig_stacked_bar = px.bar(df_plot, x='parti', y='Andel (%)', color='Kategori', title='Sammansättning av retorik per parti', text_auto='.1f', labels={'parti': 'Parti'})
+            fig_stacked_bar = px.bar(
+                df_plot,
+                x='parti',
+                y='Andel (%)',
+                color='Kategori',
+                title='Sammansättning av retorik per parti',
+                text_auto='.1f',
+                labels={'parti': 'Parti'}
+            )
             fig_stacked_bar.update_layout(xaxis={'categoryorder':'array', 'categoryarray': PARTY_ORDER})
             st.plotly_chart(fig_stacked_bar, config={"responsive": True})
+        
         with tab2:
             st.subheader("Rankning per retorisk kategori")
             category_to_rank = st.selectbox("Välj retorisk kategori:", sorted(retorik_profil.columns))
             if category_to_rank:
                 source_df = retorik_profil[[category_to_rank]].copy()
                 max_value = source_df[category_to_rank].max()
-                source_df['Rankning'] = (source_df[category_to_rank] / max_value) * 100 if max_value > 0 else 0
-                
-                # Steg 1: Sortera från STÖRST till minst (False = az, True = za)
+                source_df['Rankning'] = (source_df[category_to_rank] / max_value * 100) if max_value > 0 else 0
                 ranked_df = source_df.sort_values(by='Rankning', ascending=True)
-                
-                # Steg 2: Skicka med den sorterade ordningen till Plotly
                 fig_bar = px.bar(
-                    ranked_df, 
-                    x='Rankning', 
-                    y=ranked_df.index, 
-                    orientation='h', 
-                    labels={"y": "Parti", "x": "Relativ poäng (Ledaren = 100)"}, 
-                    text_auto='.1f', 
+                    ranked_df,
+                    x='Rankning',
+                    y=ranked_df.index,
+                    orientation='h',
+                    labels={"y": "Parti", "x": "Relativ poäng (Ledaren = 100)"},
+                    text_auto='.1f',
                     title=f"Relativ rankning - {category_to_rank}"
                 )
-                
                 fig_bar.update_layout(yaxis={'categoryorder':'array', 'categoryarray': ranked_df.index.tolist()})
-
-                st.plotly_chart(fig, config={"responsive": True})
-
+                st.plotly_chart(fig_bar, config={"responsive": True})
+        
+        # --- WordCloud per parti ---
         st.divider()
         st.subheader("Vanligaste orden per parti")
-        col1, col2, col3, col4 = st.columns(4)
-        cols = [col1, col2, col3, col4]
+        cols = st.columns(4)
         for i, party in enumerate(retorik_profil.index):
             with cols[i % 4]:
                 raw_text_blob = " ".join(df[df["parti"]==party]["text"].dropna().tolist())
                 cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
                 if cleaned_text_for_cloud:
-                    wc = WordCloud(width=400, height=300, background_color="white").generate(cleaned_text_for_cloud)
-                    st.write(f"**{party}**"); fig_wc, ax = plt.subplots(); ax.imshow(wc, interpolation='bilinear'); ax.axis("off"); st.pyplot(fig_wc); plt.close(fig_wc)
+                    try:
+                        wc = WordCloud(width=400, height=300, background_color="white", collocations=False).generate(cleaned_text_for_cloud)
+                        st.write(f"**{party}**")
+                        fig_wc, ax = plt.subplots(figsize=(4,3))
+                        ax.imshow(wc, interpolation='bilinear')
+                        ax.axis("off")
+                        st.pyplot(fig_wc)
+                        plt.close(fig_wc)
+                    except Exception as e:
+                        st.error(f"Kunde inte generera moln för {party}.")
+                else:
+                    st.write(f"**{party}** (För lite text)")
 
 elif page == "Evaluering":
     st.header("Automatisk Testbänk: Prediktion på partiernas egna texter")
