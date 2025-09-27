@@ -438,44 +438,51 @@ elif page == "Partiprediktion":
 
 elif page == "Språkbruk & Retorik":
     st.header("Jämför partiernas retorik")
-    
     import datetime
+
     today = datetime.date.today()
-    
-    # --- Försök med senaste 7 dagarna ---
-    start_date = today - datetime.timedelta(days=7)
+
+    # --- Snabbval för perioder ---
+    period_options = {
+        "Senaste 1 månad": 30,
+        "Senaste 3 månader": 90,
+        "Senaste 6 månader": 180,
+        "Senaste 12 månader": 365
+    }
+    selected_period_label = st.selectbox("Välj tidsperiod:", list(period_options.keys()), index=1)  # default 3 månader
+    days_delta = period_options[selected_period_label]
+    start_date = today - datetime.timedelta(days=days_delta)
     end_date = today
-    
     st.info(f"Visar tal från {start_date} till {end_date}")
-    
+
+    # --- Hämta data ---
     with st.spinner("Hämtar och analyserar data…"):
         df = fetch_speeches_in_period(start_date, end_date)
-        
-        # --- Fallback: senaste 30 dagarna om tomt ---
-        if df.empty:
-            start_date = today - datetime.timedelta(days=30)
-            st.info(f"Inga tal de senaste 7 dagarna, visar istället {start_date} till {end_date}")
-            df = fetch_speeches_in_period(start_date, end_date)
-    
+
     if df.empty:
         st.warning("Kunde inte hitta någon data alls i databasen.")
     else:
-        # Ordna partier
+        # --- Ordna partier ---
         df['parti'] = pd.Categorical(df['parti'], categories=PARTY_ORDER, ordered=True)
-        
-        # Lexikonbaserad tonanalys
+
+        # --- Lexikonbaserad tonanalys ---
         df_ton = apply_ton_lexicon(df, text_col="text", lexicon_path=LEXICON_PATH)
         ton_columns = [col for col in df_ton.columns if col not in ['text','parti','protokoll_datum']]
-        
-        retorik_profil = df_ton.groupby('parti', observed=False)[ton_columns].mean().reindex(PARTY_ORDER).dropna()
-        retorik_sammansattning = retorik_profil.div(retorik_profil.sum(axis=1), axis=0) * 100
 
-        # --- Plots ---
+        retorik_profil = df_ton.groupby('parti', observed=False)[ton_columns].mean().reindex(PARTY_ORDER).fillna(0)
+        retorik_sammansattning = retorik_profil.div(retorik_profil.sum(axis=1).replace(0,1), axis=0) * 100
+
+        # --- Tabs ---
         tab1, tab2 = st.tabs(["Retoriskt fingeravtryck", "Rankning per kategori"])
-        
+
+        # --- Fingeravtryck ---
         with tab1:
             st.subheader("Partiernas retoriska fingeravtryck")
-            df_plot = retorik_sammansattning.reset_index().melt(id_vars='parti', var_name='Kategori', value_name='Andel (%)')
+            df_plot = retorik_sammansattning.reset_index().melt(
+                id_vars='parti', var_name='Kategori', value_name='Andel (%)'
+            )
+            df_plot['Har_data'] = df_plot['Andel (%)'] > 0
+
             fig_stacked_bar = px.bar(
                 df_plot,
                 x='parti',
@@ -483,11 +490,26 @@ elif page == "Språkbruk & Retorik":
                 color='Kategori',
                 title='Sammansättning av retorik per parti',
                 text_auto='.1f',
-                labels={'parti': 'Parti'}
+                labels={'parti': 'Parti'},
+                color_discrete_sequence=px.colors.qualitative.Set3
             )
+
+            # Markera partier utan data
+            for parti in PARTY_ORDER:
+                if not df_plot[df_plot['parti']==parti]['Har_data'].any():
+                    fig_stacked_bar.add_scatter(
+                        x=[parti],
+                        y=[0],
+                        mode='markers',
+                        marker=dict(color='lightgrey', size=20),
+                        showlegend=False,
+                        name=f"{parti} (ingen data)"
+                    )
+
             fig_stacked_bar.update_layout(xaxis={'categoryorder':'array', 'categoryarray': PARTY_ORDER})
             st.plotly_chart(fig_stacked_bar, config={"responsive": True})
-        
+
+        # --- Rankning per kategori ---
         with tab2:
             st.subheader("Rankning per retorisk kategori")
             category_to_rank = st.selectbox("Välj retorisk kategori:", sorted(retorik_profil.columns))
@@ -507,12 +529,12 @@ elif page == "Språkbruk & Retorik":
                 )
                 fig_bar.update_layout(yaxis={'categoryorder':'array', 'categoryarray': ranked_df.index.tolist()})
                 st.plotly_chart(fig_bar, config={"responsive": True})
-        
-        # --- WordCloud per parti ---
+
+        # --- WordClouds ---
         st.divider()
         st.subheader("Vanligaste orden per parti")
         cols = st.columns(4)
-        for i, party in enumerate(retorik_profil.index):
+        for i, party in enumerate(PARTY_ORDER):
             with cols[i % 4]:
                 raw_text_blob = " ".join(df[df["parti"]==party]["text"].dropna().tolist())
                 cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
@@ -525,10 +547,11 @@ elif page == "Språkbruk & Retorik":
                         ax.axis("off")
                         st.pyplot(fig_wc)
                         plt.close(fig_wc)
-                    except Exception as e:
+                    except Exception:
                         st.error(f"Kunde inte generera moln för {party}.")
                 else:
                     st.write(f"**{party}** (För lite text)")
+
 
 elif page == "Evaluering":
     st.header("Automatisk Testbänk: Prediktion på partiernas egna texter")
