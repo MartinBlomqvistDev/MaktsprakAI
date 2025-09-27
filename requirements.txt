@@ -20,6 +20,7 @@ sentencepiece>=0.1.99,<0.2
 tokenizers>=0.19.1,<0.20
 peft>=0.17.1,<0.18
 psycopg2-binary
+supabase
 
 # ======================================================
 # ETL & HTTP
