@@ -30,9 +30,9 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # -----------------------------
 def fetch_speeches_count():
     """Returnerar antal rader i tabellen 'speeches'."""
-    resp = supabase.table("speeches").select("id", count="exact").execute()
-    if resp.error:
-        raise Exception(f"Supabase error (count): {resp.error}")
+    resp = supabase.table("speeches").select("protokoll_id", count="exact").execute()
+    if resp.status_code != 200:
+        raise Exception(f"Supabase error (count): {resp.status_code} - {resp.data}")
     return resp.count
 
 def fetch_latest_speech_date():
@@ -44,8 +44,8 @@ def fetch_latest_speech_date():
         .limit(1)
         .execute()
     )
-    if resp.error:
-        raise Exception(f"Supabase error (latest date): {resp.error}")
+    if resp.status_code != 200:
+        raise Exception(f"Supabase error (latest date): {resp.status_code} - {resp.data}")
     return resp.data[0]["protokoll_datum"] if resp.data else None
 
 def fetch_random_speeches(limit: int = 5):
@@ -53,10 +53,9 @@ def fetch_random_speeches(limit: int = 5):
     Hämtar slumpmässiga anföranden.
     Optimerad: hämtar direkt från Supabase med limit och shuffle.
     """
-    # Supabase stöder ORDER BY RANDOM() via RPC, men enklare:
     resp = supabase.table("speeches").select("*").execute()
-    if resp.error:
-        raise Exception(f"Supabase error (random speeches): {resp.error}")
+    if resp.status_code != 200:
+        raise Exception(f"Supabase error (random speeches): {resp.status_code} - {resp.data}")
     data = resp.data
     random.shuffle(data)
     return data[:limit]
@@ -71,8 +70,8 @@ def fetch_speeches_in_period(start_date, end_date):
         .lte("protokoll_datum", str(end_date))
         .execute()
     )
-    if resp.error:
-        raise Exception(f"Supabase error (fetch period): {resp.error}")
+    if resp.status_code != 200:
+        raise Exception(f"Supabase error (fetch period): {resp.status_code} - {resp.data}")
     return pd.DataFrame(resp.data)
 
 # Retry-decorator för temporära nätverksproblem
@@ -86,39 +85,54 @@ def safe_fetch_speeches_in_period(start_date, end_date):
 def insert_speech(row: dict):
     """
     Infogar ett nytt tal i tabellen 'speeches', undviker dubbletter.
-    Dubblettkontroll baseras på unikt 'id' om finns, annars 'protokoll_datum + parti'.
+    Dubblettkontroll baseras på 'protokoll_id' om finns, annars 'protokoll_datum + parti'.
     """
-    if "id" in row:
-        existing = supabase.table("speeches").select("id").eq("id", row["id"]).execute()
-        if existing.data:
-            logger.warning(f"Tal redan finns: {row['id']}")
-            return existing.data
-    else:
-        # Fallback: kontroll på datum + parti
+    # --- Kontroll mot protokoll_id ---
+    if "protokoll_id" in row:
         existing = (
             supabase.table("speeches")
-            .select("id")
-            .eq("protokoll_datum", row["protokoll_datum"])
-            .eq("parti", row["parti"])
+            .select("protokoll_id")
+            .eq("protokoll_id", row["protokoll_id"])
             .execute()
         )
         if existing.data:
-            logger.warning(f"Tal redan finns för parti {row['parti']} på datum {row['protokoll_datum']}")
+            logger.warning(f"Tal redan finns: protokoll_id {row['protokoll_id']} – hoppar över.")
             return existing.data
 
+    # --- Fallback: kontroll mot datum + parti ---
+    existing = (
+        supabase.table("speeches")
+        .select("protokoll_id")
+        .eq("protokoll_datum", row["protokoll_datum"])
+        .eq("parti", row["parti"])
+        .execute()
+    )
+    if existing.data:
+        logger.warning(f"Tal redan finns för parti {row['parti']} på datum {row['protokoll_datum']} – hoppar över.")
+        return existing.data
+
+    # --- Insert om ingen dubblett ---
     resp = supabase.table("speeches").insert(row).execute()
-    if resp.error:
-        raise Exception(f"Supabase error (insert): {resp.error}")
-    logger.info(f"Nytt tal infogat i 'speeches': {row.get('id', 'no-id')}")
+    if resp.status_code != 201:
+        raise Exception(f"Supabase error (insert): {resp.status_code} - {resp.data}")
+    logger.info(f"Nytt tal infogat i 'speeches': {row.get('protokoll_id', 'no-id')}")
     return resp.data
 
+
 def insert_tweet(row: dict):
-    """Infogar en ny tweet i tabellen 'tweets'."""
+    """Infogar en ny tweet, undviker dubbletter baserat på tweet_id."""
+    if "tweet_id" in row:
+        existing = supabase.table("tweets").select("tweet_id").eq("tweet_id", row["tweet_id"]).execute()
+        if existing.data:
+            logger.warning(f"Tweet redan finns: tweet_id {row['tweet_id']} – hoppar över.")
+            return existing.data
+
     resp = supabase.table("tweets").insert(row).execute()
-    if resp.error:
-        raise Exception(f"Supabase error (insert tweet): {resp.error}")
+    if resp.status_code != 201:
+        raise Exception(f"Supabase error (insert tweet): {resp.status_code} - {resp.data}")
     logger.info("Ny tweet infogad i 'tweets'")
     return resp.data
+
 
 # -----------------------------
 # Tabellhantering

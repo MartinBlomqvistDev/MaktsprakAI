@@ -242,50 +242,133 @@ def welcome_page():
     st.markdown("En interaktiv analys av det politiska språket i Sverige.")
 
     # News-box CSS
-    st.markdown("""<style>
-        .news-box { border: 1px solid #555; border-radius: 10px; padding: 15px; background-color: transparent; margin-bottom: 20px; }
-        .news-box h3 { margin-top: 0; margin-bottom: 10px; font-size: 1.25em; }
-        .news-box ul { list-style-type: none; padding-left: 0; margin-bottom: 0; }
-        .news-box li { margin-bottom: 8px; font-size: 0.9em; }
-        </style>""", unsafe_allow_html=True)
+    st.markdown("""
+        <style>
+        .news-box {
+            border: 1px solid #555;           /* En tunn grå ram */
+            border-radius: 10px;              /* Mjukt rundade hörn */
+            padding: 15px;                    /* Lite luft inuti rutan */
+            background-color: transparent;    /* Transparent bakgrund, eller välj en färg t.ex. #1E1E2A */
+            margin-bottom: 20px;              /* Lite utrymme under rutan */
+        }
+        .news-box h3 {
+            margin-top: 0;                    /* Tar bort extra utrymme ovanför rubriken */
+            margin-bottom: 10px;
+            font-size: 1.25em;                /* En lagom stor rubrik */
+        }
+        .news-box ul {
+            list-style-type: none;            /* Tar bort prickarna i listan */
+            padding-left: 0;                  /* Tar bort indraget */
+            margin-bottom: 0;
+        }
+        .news-box li {
+            margin-bottom: 8px;               /* Lite avstånd mellan varje nyhetsrad */
+            font-size: 0.9em;                 /* Något mindre text för nyheterna */
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    main_col, news_col = st.columns([2, 1])
+    # === NY LAYOUT MED TVÅ KOLUMNER ===
+    main_col, news_col = st.columns([2, 1]) # Vänster kolumn är dubbelt så bred som den högra
     with main_col:
+        # Dashboarddelen
         st.divider()
         live_results_df, live_accuracy, total_live_articles = run_live_evaluation(articles_per_party=4)
-        total_speeches = fetch_speeches_count()
-        latest_speech_date = fetch_latest_speech_date()
+        
+        with create_connection() as conn:
+            total_speeches = conn.execute("SELECT COUNT(*) FROM speeches").fetchone()[0]
+            latest_speech_date = conn.execute("SELECT MAX(protokoll_datum) FROM speeches").fetchone()[0]
+
         col1, col2, col3 = st.columns(3)
         col1.metric(f"Träffsäkerhet (de {total_live_articles} senaste artiklarna)", f"{live_accuracy:.1f}%")
         col2.metric("Totalt anföranden i databasen", f"{total_speeches:,}".replace(",", " "))
         col3.metric("Senaste anförande", latest_speech_date)
         
         st.divider()
+        # Info-sektionen
         st.subheader("Mål")
         st.markdown(
             """
             **MaktspråkAI** är ett fullskaligt **data science- och NLP-projekt**.
-            Syftet är att **utforska, analysera och visualisera det politiska språkbruket i Sveriges riksdag**.
+            Syftet är att **utforska, analysera och visualisera det politiska språkbruket i Sveriges riksdag** genom att kombinera modern maskininlärning och AI med systemdesign.  
+            
+            Projektet besvarar frågor som:
+            - Kan man **förutsäga ett partis tillhörighet** enbart genom språkbruk?
+            - Vilka **retoriska mönster** skiljer partierna åt?
+            - Hur förändras språket över tid i **debatter**?
             """
         )
-        st.divider()
-        st.subheader("Teknologi")
-        st.markdown("...")  # Fyll i teknologi-texten från din existerande kod
-        st.divider()
-        st.subheader("Om mig")
-        st.markdown("...")  # Fyll i info om dig
 
+        st.divider()
+
+        st.subheader("Teknologi")
+        st.markdown(
+            """
+            Detta projekt är byggt i Python och använder ett antal bibliotek och ramverk för att täcka hela kedjan 
+            från datainsamling till analys och visualisering:
+
+            - **Streamlit** Används för att bygga den interaktiva webbapplikationen. Gör det möjligt att testa modeller, 
+              visa resultat och utforska data direkt i webbläsaren utan extra konfiguration.  
+
+            - **Pandas & NumPy** Huvudverktyg för datamanipulering och analys. Används för att rensa text, strukturera dataset, 
+              hantera tidsserier samt utföra beräkningar och transformationer på miljontals ord och meningar.  
+
+            - **Transformers (Hugging Face)** Kärnan i NLP-delen. Projektet använder och finjusterar modellen **KB/bert-base-swedish-cased** för textklassificering på svenska. Hugging Face-biblioteket möjliggör också enkel laddning av 
+              förtränade modeller och jämförelser med alternativa arkitekturer.  
+
+            - **Scikit-learn** Används för att bygga baseline-modeller, utföra evalueringar (precision, recall, F1-score) 
+              samt för klassisk textanalys (t.ex. TF-IDF, logistisk regression och SVM).  
+              Ger en stabil grund för att jämföra traditionella metoder mot transformer-baserade modeller.  
+
+            - **Plotly, Matplotlib & Calplot** Visualiseringsstacken. Plotly används för interaktiva grafer i webben, Matplotlib för mer 
+              klassiska figurer, och Calplot för att skapa kalenderdiagram som visar aktivitetsmönster över tid.  
+
+            - **SQLite** Projektets databas. Hanterar över 30 000 riksdagsanföranden med metadata (parti, datum, talare).  
+              ETL-pipelinen laddar automatiskt in nya data, rensar, transformerar och lagrar i SQLite för snabb åtkomst.  
+
+            - **Övrigt**
+
+              Textförbehandling med regex, tokenisering och stopword-listor, klassvikter, weighted sampling, 
+              checkpointing och loggning säkerställer reproducerbarhet och att modellen kan tränas och uppdateras smidigt.
+            """
+        )
+
+        st.divider()
+
+        st.subheader("Om mig")
+        st.markdown(
+            """
+            Jag heter **Martin Blomqvist**.  
+            Jag har arbetat med att bygga och förbättra system i olika miljöer – från ekologiskt jordbruk till kod och dataanalys.  
+            Oavsett område har fokus varit detsamma: att förstå helheten, hitta struktur och skapa lösningar som fungerar i praktiken.  
+            **MaktspråkAI** visar hur jag använder dessa erfarenheter i ett tekniskt sammanhang.  
+
+            
+            **Kontakt:**
+            - **E-post:** [cm.blomqvist@gmail.com](mailto:cm.blomqvist@gmail.com)
+            - **LinkedIn:** [Martin Blomqvist](https://www.linkedin.com/in/martin-blomqvist)
+            - **GitHub:** [Martin Blomqvist](https://github.com/martinblomqvistdev)
+            """
+        )
+        
+        st.divider()
+
+    # === NYHETSRUTAN HAMNAR I "news_col" ===
     with news_col:
         try:
             news_items = fetch_news()
-            if news_items:
+            if not news_items:
+                st.warning("Kunde inte hämta nyhetsflödet.")
+            else:
                 news_html = '<div class="news-box"><h3>Senaste inrikesnyheterna</h3><ul>'
                 for item in news_items:
                     news_html += f'<li><a href="{item["link"]}" target="_blank">{item["title"]}</a></li>'
-                news_html += '</ul></div>'
+                news_html += '</ul><div style="text-align: right; font-size: 0.8em; margin-top: 10px;">Från <a href="https://www.svt.se/nyheter/inrikes" target="_blank">SVT Nyheter</a></div></div>'
+                
                 st.markdown(news_html, unsafe_allow_html=True)
         except Exception as e:
-            st.error(f"Ett fel uppstod vid hämtning av nyheter: {e}")
+            st.error(f"Ett fel uppstod vid hämtning av nyheter.")
+
 
 # =====================
 # Sidebar och Navigation
