@@ -31,8 +31,8 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 def fetch_speeches_count():
     """Returnerar antal rader i tabellen 'speeches'."""
     resp = supabase.table("speeches").select("protokoll_id", count="exact").execute()
-    if resp.status_code != 200:
-        raise Exception(f"Supabase error (count): {resp.status_code} - {resp.data}")
+    if resp.error:
+        raise Exception(f"Supabase error (count): {resp.error.message}")
     return resp.count
 
 def fetch_latest_speech_date():
@@ -44,18 +44,15 @@ def fetch_latest_speech_date():
         .limit(1)
         .execute()
     )
-    if resp.status_code != 200:
-        raise Exception(f"Supabase error (latest date): {resp.status_code} - {resp.data}")
+    if resp.error:
+        raise Exception(f"Supabase error (latest date): {resp.error.message}")
     return resp.data[0]["protokoll_datum"] if resp.data else None
 
 def fetch_random_speeches(limit: int = 5):
-    """
-    Hämtar slumpmässiga anföranden.
-    Optimerad: hämtar direkt från Supabase med limit och shuffle.
-    """
+    """Hämtar slumpmässiga anföranden."""
     resp = supabase.table("speeches").select("*").execute()
-    if resp.status_code != 200:
-        raise Exception(f"Supabase error (random speeches): {resp.status_code} - {resp.data}")
+    if resp.error:
+        raise Exception(f"Supabase error (random speeches): {resp.error.message}")
     data = resp.data
     random.shuffle(data)
     return data[:limit]
@@ -70,8 +67,8 @@ def fetch_speeches_in_period(start_date, end_date):
         .lte("protokoll_datum", str(end_date))
         .execute()
     )
-    if resp.status_code != 200:
-        raise Exception(f"Supabase error (fetch period): {resp.status_code} - {resp.data}")
+    if resp.error:
+        raise Exception(f"Supabase error (fetch period): {resp.error.message}")
     return pd.DataFrame(resp.data)
 
 # Retry-decorator för temporära nätverksproblem
@@ -113,11 +110,10 @@ def insert_speech(row: dict):
 
     # --- Insert om ingen dubblett ---
     resp = supabase.table("speeches").insert(row).execute()
-    if resp.status_code != 201:
-        raise Exception(f"Supabase error (insert): {resp.status_code} - {resp.data}")
+    if resp.error:
+        raise Exception(f"Supabase error (insert): {resp.error.message}")
     logger.info(f"Nytt tal infogat i 'speeches': {row.get('protokoll_id', 'no-id')}")
     return resp.data
-
 
 def insert_tweet(row: dict):
     """Infogar en ny tweet, undviker dubbletter baserat på tweet_id."""
@@ -128,11 +124,10 @@ def insert_tweet(row: dict):
             return existing.data
 
     resp = supabase.table("tweets").insert(row).execute()
-    if resp.status_code != 201:
-        raise Exception(f"Supabase error (insert tweet): {resp.status_code} - {resp.data}")
+    if resp.error:
+        raise Exception(f"Supabase error (insert tweet): {resp.error.message}")
     logger.info("Ny tweet infogad i 'tweets'")
     return resp.data
-
 
 # -----------------------------
 # Tabellhantering
