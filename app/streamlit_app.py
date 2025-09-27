@@ -268,23 +268,23 @@ def welcome_page():
         </style>
     """, unsafe_allow_html=True)
 
-    # === NY LAYOUT MED TVÅ KOLUMNER ===
-    main_col, news_col = st.columns([2, 1]) # Vänster kolumn är dubbelt så bred som den högra
+    # # === NY LAYOUT MED TVÅ KOLUMNER ===
+    main_col, news_col = st.columns([2, 1])  # Vänster kolumn är dubbelt så bred som den högra
     with main_col:
         # Dashboarddelen
         st.divider()
         live_results_df, live_accuracy, total_live_articles = run_live_evaluation(articles_per_party=4)
-        
-        with create_connection() as conn:
-            total_speeches = conn.execute("SELECT COUNT(*) FROM speeches").fetchone()[0]
-            latest_speech_date = conn.execute("SELECT MAX(protokoll_datum) FROM speeches").fetchone()[0]
+    
+        total_speeches = fetch_speeches_count()
+        latest_speech_date = fetch_latest_speech_date()
 
         col1, col2, col3 = st.columns(3)
         col1.metric(f"Träffsäkerhet (de {total_live_articles} senaste artiklarna)", f"{live_accuracy:.1f}%")
         col2.metric("Totalt anföranden i databasen", f"{total_speeches:,}".replace(",", " "))
         col3.metric("Senaste anförande", latest_speech_date)
-        
+    
         st.divider()
+        
         # Info-sektionen
         st.subheader("Mål")
         st.markdown(
