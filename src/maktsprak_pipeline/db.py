@@ -31,9 +31,10 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 def fetch_speeches_count():
     """Returnerar antal rader i tabellen 'speeches'."""
     resp = supabase.table("speeches").select("protokoll_id", count="exact").execute()
-    if resp.error:
-        raise Exception(f"Supabase error (count): {resp.error.message}")
+    if resp.data is None:
+        raise Exception(f"Supabase error (count): {resp}")
     return resp.count
+
 
 def fetch_latest_speech_date():
     """Returnerar senaste protokoll_datum från tabellen 'speeches'."""
@@ -44,18 +45,20 @@ def fetch_latest_speech_date():
         .limit(1)
         .execute()
     )
-    if resp.error:
-        raise Exception(f"Supabase error (latest date): {resp.error.message}")
-    return resp.data[0]["protokoll_datum"] if resp.data else None
+    if not resp.data:
+        return None
+    return resp.data[0]["protokoll_datum"]
+
 
 def fetch_random_speeches(limit: int = 5):
     """Hämtar slumpmässiga anföranden."""
     resp = supabase.table("speeches").select("*").execute()
-    if resp.error:
-        raise Exception(f"Supabase error (random speeches): {resp.error.message}")
+    if not resp.data:
+        return []
     data = resp.data
     random.shuffle(data)
     return data[:limit]
+
 
 @st.cache_data(ttl=1800)
 def fetch_speeches_in_period(start_date, end_date):
@@ -67,14 +70,16 @@ def fetch_speeches_in_period(start_date, end_date):
         .lte("protokoll_datum", str(end_date))
         .execute()
     )
-    if resp.error:
-        raise Exception(f"Supabase error (fetch period): {resp.error.message}")
+    if resp.data is None:
+        return pd.DataFrame()
     return pd.DataFrame(resp.data)
+
 
 # Retry-decorator för temporära nätverksproblem
 @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
 def safe_fetch_speeches_in_period(start_date, end_date):
     return fetch_speeches_in_period(start_date, end_date)
+
 
 # -----------------------------
 # Skrivfunktioner
@@ -110,10 +115,11 @@ def insert_speech(row: dict):
 
     # --- Insert om ingen dubblett ---
     resp = supabase.table("speeches").insert(row).execute()
-    if resp.error:
-        raise Exception(f"Supabase error (insert): {resp.error.message}")
+    if resp.data is None:
+        raise Exception(f"Supabase error (insert): {resp}")
     logger.info(f"Nytt tal infogat i 'speeches': {row.get('protokoll_id', 'no-id')}")
     return resp.data
+
 
 def insert_tweet(row: dict):
     """Infogar en ny tweet, undviker dubbletter baserat på tweet_id."""
@@ -124,10 +130,11 @@ def insert_tweet(row: dict):
             return existing.data
 
     resp = supabase.table("tweets").insert(row).execute()
-    if resp.error:
-        raise Exception(f"Supabase error (insert tweet): {resp.error.message}")
+    if resp.data is None:
+        raise Exception(f"Supabase error (insert tweet): {resp}")
     logger.info("Ny tweet infogad i 'tweets'")
     return resp.data
+
 
 # -----------------------------
 # Tabellhantering
