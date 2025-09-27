@@ -17,22 +17,37 @@ logger = get_logger()
 # -----------------------------
 # Skapa connection (Ansluter till PostgreSQL)
 # -----------------------------
+# I filen: src/maktsprak_pipeline/db.py
+import streamlit as st
+import psycopg2
+
+def get_secrets():
+    # Hämta databas-hemligheterna från Streamlit Secrets
+    secrets = st.secrets.connections.supabase
+    # Returnera som strängar/int för anslutning
+    return secrets['user'], secrets['password'], secrets['host'], secrets['port'], secrets['dbname']
+
+
 def create_connection():
-    """Skapar en anslutning till PostgreSQL-databasen via konfigurationsvariabler."""
+    """Skapar en anslutning till PostgreSQL-databasen via Streamlit Secrets."""
+    
+    # Hämta uppgifterna säkert
+    DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME = get_secrets()
+
     try:
+        # Använd uppgifterna för att ansluta
         conn = psycopg2.connect(
             user=DB_USER,
             password=DB_PASSWORD,
             host=DB_HOST,
-            port=DB_PORT,
-            dbname=DB_NAME
+            port=DB_PORT, 
+            dbname=DB_NAME,
+            connect_timeout=10 # Lägg till timeout för att hantera nätverkshickor
         )
-        logger.info(f"PostgreSQL-anslutning skapad till databas: {DB_NAME}")
         return conn
-    except psycopg2.OperationalError as e:
-        logger.exception("Kunde inte ansluta till PostgreSQL-databasen!")
-        # Denna exception kommer att få appen att krascha vid deployment om secrets saknas/är fel.
-        raise e
+    except Exception as e:
+        # Detta är den kritiska loggen som du såg - nu kastar vi ett tydligt fel
+        raise Exception(f"Kunde inte ansluta till databasen. Kontrollera Supabase-inställningar och Streamlit Secrets.") from e
 
 # -----------------------------
 # Skapa tabeller
