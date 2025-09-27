@@ -32,9 +32,8 @@ def fetch_speeches_count():
     """Returnerar antal rader i tabellen 'speeches'."""
     resp = supabase.table("speeches").select("protokoll_id", count="exact").execute()
     if resp.data is None:
-        raise Exception(f"Supabase error (count): {resp}")
+        raise Exception(f"Supabase fetch failed: {resp}")
     return resp.count
-
 
 def fetch_latest_speech_date():
     """Returnerar senaste protokoll_datum från tabellen 'speeches'."""
@@ -49,7 +48,6 @@ def fetch_latest_speech_date():
         return None
     return resp.data[0]["protokoll_datum"]
 
-
 def fetch_random_speeches(limit: int = 5):
     """Hämtar slumpmässiga anföranden."""
     resp = supabase.table("speeches").select("*").execute()
@@ -58,7 +56,6 @@ def fetch_random_speeches(limit: int = 5):
     data = resp.data
     random.shuffle(data)
     return data[:limit]
-
 
 @st.cache_data(ttl=1800)
 def fetch_speeches_in_period(start_date, end_date):
@@ -70,16 +67,14 @@ def fetch_speeches_in_period(start_date, end_date):
         .lte("protokoll_datum", str(end_date))
         .execute()
     )
-    if resp.data is None:
+    if not resp.data:
         return pd.DataFrame()
     return pd.DataFrame(resp.data)
-
 
 # Retry-decorator för temporära nätverksproblem
 @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
 def safe_fetch_speeches_in_period(start_date, end_date):
     return fetch_speeches_in_period(start_date, end_date)
-
 
 # -----------------------------
 # Skrivfunktioner
@@ -116,10 +111,9 @@ def insert_speech(row: dict):
     # --- Insert om ingen dubblett ---
     resp = supabase.table("speeches").insert(row).execute()
     if resp.data is None:
-        raise Exception(f"Supabase error (insert): {resp}")
+        raise Exception(f"Supabase insert failed: {resp}")
     logger.info(f"Nytt tal infogat i 'speeches': {row.get('protokoll_id', 'no-id')}")
     return resp.data
-
 
 def insert_tweet(row: dict):
     """Infogar en ny tweet, undviker dubbletter baserat på tweet_id."""
@@ -131,10 +125,9 @@ def insert_tweet(row: dict):
 
     resp = supabase.table("tweets").insert(row).execute()
     if resp.data is None:
-        raise Exception(f"Supabase error (insert tweet): {resp}")
+        raise Exception(f"Supabase insert tweet failed: {resp}")
     logger.info("Ny tweet infogad i 'tweets'")
     return resp.data
-
 
 # -----------------------------
 # Tabellhantering
