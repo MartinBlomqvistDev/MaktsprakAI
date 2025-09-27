@@ -433,7 +433,7 @@ elif page == "Partiprediktion":
                 labels={"x": "Parti", "y": "Sannolikhet"},
                 text=[f"{party_prob_dict.get(p, 0)*100:.1f}%" for p in PARTY_ORDER]
             )
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, config={"responsive": True})
 
 
 elif page == "Språkbruk & Retorik":
@@ -457,7 +457,7 @@ elif page == "Språkbruk & Retorik":
             df_plot = retorik_sammansattning.reset_index().melt(id_vars='parti', var_name='Kategori', value_name='Andel (%)')
             fig_stacked_bar = px.bar(df_plot, x='parti', y='Andel (%)', color='Kategori', title='Sammansättning av retorik per parti', text_auto='.1f', labels={'parti': 'Parti'})
             fig_stacked_bar.update_layout(xaxis={'categoryorder':'array', 'categoryarray': PARTY_ORDER})
-            st.plotly_chart(fig_stacked_bar, width='stretch')
+            st.plotly_chart(fig_stacked_bar, config={"responsive": True})
         with tab2:
             st.subheader("Rankning per retorisk kategori")
             category_to_rank = st.selectbox("Välj retorisk kategori:", sorted(retorik_profil.columns))
@@ -482,7 +482,8 @@ elif page == "Språkbruk & Retorik":
                 
                 fig_bar.update_layout(yaxis={'categoryorder':'array', 'categoryarray': ranked_df.index.tolist()})
 
-                st.plotly_chart(fig_bar, width='stretch')
+                st.plotly_chart(fig, config={"responsive": True})
+
         st.divider()
         st.subheader("Vanligaste orden per parti")
         col1, col2, col3, col4 = st.columns(4)
@@ -640,7 +641,8 @@ elif page == "Historik":
             range=[df_plot[category_to_track].min() * 0.9, df_plot[category_to_track].max() * 1.1]
         )
 
-        st.plotly_chart(fig, width='stretch') 
+        st.plotly_chart(fig, config={"responsive": True})
+
 
     st.divider()
 
@@ -689,7 +691,7 @@ elif page == "Historik":
                         fig_wc, ax = plt.subplots(figsize=(4, 3))
                         ax.imshow(wc, interpolation='bilinear')
                         ax.axis("off")
-                        st.pyplot(fig_wc, width='stretch')
+                        st.pyplot(fig_wc, bbox_inches='tight', dpi=fig_wc.dpi)
                         plt.close(fig_wc)
                         
                     except Exception as e:
