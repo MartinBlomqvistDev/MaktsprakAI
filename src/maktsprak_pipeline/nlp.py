@@ -38,7 +38,10 @@ political_stopwords = {
     "vi", "att", "för", "på", "och", "men", "eller", "nu", "som", "med", "är", "den", "det",
     "ett", "en", "av", "om", "till", "har", "vår", "vårt", "våra", "de", "dem", "dig", "oss",
     "måste", "skall", "ska", "barn", "både", "människor", "ändå", "bör", "åtgärder", "stöd", "sveriges",
-    "uppdrag", "staten", "personer", "person", "talma", "fortsätt", "fortsätta", "mar"
+    "uppdrag", "staten", "personer", "person", "talma", "fortsätt", "fortsätta", "mar",
+
+    # Månadsnamn (för att undvika datumstörningar)
+    "januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"
 }
 combined_stopwords = swedish_stopwords.union(political_stopwords)
 
