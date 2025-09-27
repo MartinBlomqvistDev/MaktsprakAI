@@ -264,7 +264,7 @@ def run_live_evaluation(articles_per_party: int = 5):
     for article in articles_to_analyze:
         cleaned_for_model = clean_text(article['content'])
         # Använder nu de globala model/tokenizer (som laddades i toppen)
-        party_probs = predict_party(model, tokenizer, [cleaned_for_mod el])
+        party_probs = predict_party(model, tokenizer, [cleaned_for_model])
         predicted_party = max(party_probs[0].items(), key=lambda x: x[1])[0]
         results.append({
             "Titel": article['title'], 
