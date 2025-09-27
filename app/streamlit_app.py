@@ -414,10 +414,27 @@ elif page == "Partiprediktion":
             with st.spinner("Beräknar…"):
                 cleaned_text = clean_text(user_text)
                 party_probs = predict_party(model, tokenizer, [cleaned_text])
-                party, prob = max(party_probs[0].items(), key=lambda x: x[1])[0]
+
+                # --- Säker fallback om modellen returnerar tomt eller ogiltigt ---
+                if not party_probs or not isinstance(party_probs[0], dict):
+                    st.warning("Modellen returnerade inget resultat. Kontrollera input eller försök igen.")
+                    party_probs = [{p: 0 for p in PARTY_ORDER}]  # fallback med 0 för alla partier
+
+                party_prob_dict = party_probs[0]
+
+                # Hitta parti med högst sannolikhet
+                party, prob = max(party_prob_dict.items(), key=lambda x: x[1])
+
             st.success(f"**Predikterat parti:** {party} ({prob*100:.1f}% säkerhet)")
-            fig = px.bar(x=PARTY_ORDER, y=[party_probs[0].get(p, 0) for p in PARTY_ORDER], labels={"x": "Parti", "y": "Sannolikhet"}, text=[f"{party_probs[0].get(p, 0)*100:.1f}%" for p in PARTY_ORDER])
+
+            fig = px.bar(
+                x=PARTY_ORDER,
+                y=[party_prob_dict.get(p, 0) for p in PARTY_ORDER],
+                labels={"x": "Parti", "y": "Sannolikhet"},
+                text=[f"{party_prob_dict.get(p, 0)*100:.1f}%" for p in PARTY_ORDER]
+            )
             st.plotly_chart(fig, width='stretch')
+
 
 elif page == "Språkbruk & Retorik":
     st.header("Jämför partiernas retorik")
