@@ -14,6 +14,7 @@ from .logger import get_logger
 import pandas as pd
 import random
 from tenacity import retry, wait_fixed, stop_after_attempt
+from datetime import datetime
 
 logger = get_logger()
 
@@ -40,6 +41,21 @@ def fetch_latest_speech_date():
     resp = (
         supabase.table("speeches")
         .select("protokoll_datum")
+        .order("protokoll_datum", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if not resp.data:
+        return None
+    return resp.data[0]["protokoll_datum"]
+
+def fetch_latest_speech_date_cached():
+    """Returnerar senaste protokoll_datum med år-filter för stora tabeller."""
+    current_year = datetime.now().year
+    resp = (
+        supabase.table("speeches")
+        .select("protokoll_datum")
+        .gte("protokoll_datum", f"{current_year}-01-01")
         .order("protokoll_datum", desc=True)
         .limit(1)
         .execute()

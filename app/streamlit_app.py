@@ -34,7 +34,7 @@ if str(proj_root) not in sys.path:
 # =====================
 from src.maktsprak_pipeline.db import (
     fetch_speeches_count,
-    fetch_latest_speech_date,
+    fetch_latest_speech_date_cached,
     fetch_random_speeches,
     fetch_speeches_in_period,
     insert_speech,
@@ -205,7 +205,7 @@ model, tokenizer, LEXICON_PATH = load_all_resources()
 @st.cache_data(ttl=60)
 def get_data_signature():
     count = fetch_speeches_count()
-    latest_date = fetch_latest_speech_date()
+    latest_date = fetch_latest_speech_date_cached()
     return (count, latest_date)
 
 @st.cache_data(show_spinner="Värmer upp AI-modellen...")
@@ -276,7 +276,7 @@ def welcome_page():
         live_results_df, live_accuracy, total_live_articles = run_live_evaluation(articles_per_party=4)
     
         total_speeches = fetch_speeches_count()
-        latest_speech_date = fetch_latest_speech_date()
+        latest_speech_date = fetch_latest_speech_date_cached()
 
         col1, col2, col3 = st.columns(3)
         col1.metric(f"Träffsäkerhet (de {total_live_articles} senaste artiklarna)", f"{live_accuracy:.1f}%")
