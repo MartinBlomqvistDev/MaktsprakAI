@@ -285,75 +285,90 @@ def welcome_page():
     
         st.divider()
         
-        # Info-sektionen
-        st.subheader("Mål")
+        # ----------------------------------------------------------------------
+        # 1. OM MIG
+        # ----------------------------------------------------------------------
+
+        st.title("MaktspråkAI: Analys av politiskt språkbruk")
+
         st.markdown(
             """
-            **MaktspråkAI** är ett fullskaligt **data science- och NLP-projekt**.
-            Syftet är att **utforska, analysera och visualisera det politiska språkbruket i Sveriges riksdag** genom att kombinera modern maskininlärning och AI med systemdesign.  
+            ## Om mig: Martin Blomqvist – Systemtänkande & Data Science
+
+            Jag heter **Martin Blomqvist** och drivs av att förstå och förbättra komplexa system. Min bakgrund är bred – jag har arbetat i vitt skilda miljöer, från **ekologiskt jordbruk** till avancerad **dataanalys**. Oavsett sammanhang har fokus alltid legat på detsamma: att **hitta den dolda strukturen** i kaoset och bygga lösningar som fungerar i den verkliga världen.
+
+            ---
+
+            ### MaktspråkAI – Från helhetssyn till praktik
             
-            Projektet besvarar frågor som:
-            - Kan man **förutsäga ett partis tillhörighet** enbart genom språkbruk?
-            - Vilka **retoriska mönster** skiljer partierna åt?
-            - Hur förändras språket över tid i **debatter**?
-            """
-        )
+            **MaktspråkAI** är ett fullskaligt **data science- och NLP-projekt** som tillämpar dessa erfarenheter. Programmet skapades under $\text{EC Utbildnings Data Scientist}$-program och visar hur jag kombinerar min systemanalytiska förmåga med teknisk expertis.
 
-        st.divider()
-
-        st.subheader("Teknologi")
-        st.markdown(
-            """
-            Detta projekt är byggt i Python och använder ett antal bibliotek och ramverk för att täcka hela kedjan 
-            från datainsamling till analys och visualisering:
-
-            - **Streamlit** Används för att bygga den interaktiva webbapplikationen. Gör det möjligt att testa modeller, 
-              visa resultat och utforska data direkt i webbläsaren utan extra konfiguration.  
-
-            - **Pandas & NumPy** Huvudverktyg för datamanipulering och analys. Används för att rensa text, strukturera dataset, 
-              hantera tidsserier samt utföra beräkningar och transformationer på miljontals ord och meningar.  
-
-            - **Transformers (Hugging Face)** Kärnan i NLP-delen. Projektet använder och finjusterar modellen **KB/bert-base-swedish-cased** för textklassificering på svenska. Hugging Face-biblioteket möjliggör också enkel laddning av 
-              förtränade modeller och jämförelser med alternativa arkitekturer.  
-
-            - **Scikit-learn** Används för att bygga baseline-modeller, utföra evalueringar (precision, recall, F1-score) 
-              samt för klassisk textanalys (t.ex. TF-IDF, logistisk regression och SVM).  
-              Ger en stabil grund för att jämföra traditionella metoder mot transformer-baserade modeller.  
-
-            - **Plotly, Matplotlib & Calplot** Visualiseringsstacken. Plotly används för interaktiva grafer i webben, Matplotlib för mer 
-              klassiska figurer, och Calplot för att skapa kalenderdiagram som visar aktivitetsmönster över tid.  
-
-            - **SQLite** Projektets databas. Hanterar över 30 000 riksdagsanföranden med metadata (parti, datum, talare).  
-              ETL-pipelinen laddar automatiskt in nya data, rensar, transformerar och lagrar i SQLite för snabb åtkomst.  
-
-            - **Övrigt**
-
-              Textförbehandling med regex, tokenisering och stopword-listor, klassvikter, weighted sampling, 
-              checkpointing och loggning säkerställer reproducerbarhet och att modellen kan tränas och uppdateras smidigt.
-            """
-        )
-
-        st.divider()
-
-        st.subheader("Om mig")
-        st.markdown(
-            """
-            Jag heter **Martin Blomqvist**.  
-            Jag har arbetat med att bygga och förbättra system i olika miljöer – från ekologiskt jordbruk till kod och dataanalys.  
-            Oavsett område har fokus varit detsamma: att förstå helheten, hitta struktur och skapa lösningar som fungerar i praktiken.  
-            **MaktspråkAI** visar hur jag använder dessa erfarenheter i ett tekniskt sammanhang.  
-
+            Syftet är att **utforska, analysera och visualisera det politiska språkbruket i Sveriges riksdag** genom att kombinera modern maskininlärning ($\text{AI}$) med robust systemdesign. 
             
-            **Kontakt:**
-            - **E-post:** [cm.blomqvist@gmail.com](mailto:cm.blomqvist@gmail.com)
-            - **LinkedIn:** [Martin Blomqvist](https://www.linkedin.com/in/martin-blomqvist)
-            - **GitHub:** [Martin Blomqvist](https://github.com/martinblomqvistdev)
+            Jag tar nu steget ut i yrkeslivet via min LIA och ser fram emot att fortsätta tillämpa och utveckla dessa kunskaper. **Följ gärna min resa in i detta spännande fält!**
+            
+            ---
+
+            ### Nyckelfrågor projektet besvarar:
+            * Kan man **förutsäga ett partis tillhörighet** enbart genom språkbruk?
+            * Vilka **retoriska mönster** skiljer partierna åt i olika frågor?
+            * Hur förändras språket över tid i **politiska debatter**?
+
+            ---
+
+            ### Kontakt & Portfolio
+
+            * **E-post:** [cm.blomqvist@gmail.com](mailto:cm.blomqvist@gmail.com)
+            * **LinkedIn:** [Martin Blomqvist](https://www.linkedin.com/in/martin-blomqvist)
+            * **GitHub:** [Martin Blomqvist](https://github.com/martinblomqvistdev)
+
+            ---
             """
         )
-        
-        st.divider()
 
-    # === NYHETSRUTAN HAMNAR I "news_col" ===
+        # ----------------------------------------------------------------------
+        # 2. TEKNOLOGI
+        # ----------------------------------------------------------------------
+
+        st.subheader("Teknisk arkitektur")
+
+        st.markdown(
+            """
+            Detta projekt är byggt på en robust och modern **Python-stack**, utformad för att hantera hela AI-livscykeln – från datainsamling till avancerad NLP och interaktiv visualisering. Jag har valt branschledande verktyg för att säkerställa **skalbarhet, reproducerbarhet** och högsta analysprecision.
+            
+            ---
+
+            ### Databehandling & modellkärna (the AI engine)
+
+            | Verktyg | Funktion & analysdjup |
+            | :--- | :--- |
+            | **Transformers (Hugging Face)** | **Kärnan i min NLP-lösning.** Jag utnyttjar och finjusterar **state-of-the-art BERT-modellen (KB/bert-base-swedish-cased)** för banbrytande textklassificering på svenska. Detta möjliggör djup semantisk förståelse och överträffar traditionella metoder i komplexiteten hos politisk text. |
+            | **Scikit-learn** | **Modellutvärdering & baslinjeanalys.** Används för att etablera en pålitlig baslinje med klassiska metoder (t.ex. TF-IDF, SVM) och rigorösa evalueringar (**precision, recall, F1-score**). Säkerställer att transformer-modellerna bevisligen förbättrar modellen, även i svåra fall såsom vid snedvriden data. |
+            | **Pandas & NumPy** | **Ryggraden i Data Science.** Dessa Python-bibliotek används för effektiv datastrukturering, tidsserieanalys och rensning av miljontals textenheter. Hanterar komplexa beräkningar och transformationer nödvändiga för att förbereda NLP-dataset. |
+
+            ---
+
+            ### Webbapplikation & visualisering (the interface)
+
+            | Verktyg | Funktion & interaktion |
+            | :--- | :--- |
+            | **Streamlit** | **Interaktiv webbapplikation.** Bygger den snabba och användarvänliga GUI:n. Gör det möjligt för slutanvändare att **omedelbart testa AI-modeller live**, filtrera analysresultat och utforska data direkt i webbläsaren utan någon lokal installation. |
+            | **Plotly, Matplotlib & Calplot** | **Dynamisk visualisering.** Ger liv åt datan. **Plotly** skapar interaktiva grafer i applikationen, Matplotlib används för statiska analyser, och Calplot visualiserar aktivitetsmönster och trender över tid. |
+
+            ---
+
+            ### Datainfrastruktur & MLOps
+
+            | Verktyg | Funktion & driftsäkerhet |
+            | :--- | :--- |
+            | **PostgreSQL (via Supabase)** | **Skalbar databaslösning.** Databasen hanterar effektivt över **40 000 riksdagsanföranden** med komplett metadata. Den driftade PostgreSQL-instansen via Supabase säkerställer **snabb och pålitlig åtkomst** till stora datavolymer. |
+            | **ETL & Reproducerbarhet** | **Robust data pipeline.** ETL-pipelinen (Extract, Transform, Load) uppdaterar databasen direkt. Jag använder checkpointing, loggning och weighted sampling för att säkerställa att modellträning är **reproducerbar** och att nya data automatiskt införlivas i analysen. |
+            """
+        )
+        st.divider() 
+
+
+    # === NYHETSRUTAN ===
     with news_col:
         try:
             news_items = fetch_news()
@@ -406,7 +421,7 @@ elif page == "Partiprediktion":
     st.info("""
         **Testa AI-modellen live!** Klistra in valfri text (t.ex. ett citat, pressmeddelande eller uttalande)
         från ett riksdagsparti. Eller experimentera själv med påhittade citat. Modellen analyserar språk, ton och retorik för att förutsäga vilket parti
-        som har skrivit texten. Resultatet visar sannolikheten för alla partier.
+        som har skrivit texten.
     """)
     user_text = st.text_area("Skriv eller klistra in ett citat här:", height=150, label_visibility="collapsed")
     if st.button("Prediktera parti"):
@@ -559,8 +574,8 @@ elif page == "Evaluering":
     # === NY, MER FÖRKLARANDE INFO-BOX ===
     st.info("""
     Hämta och evaluera de senaste texterna direkt från riksdagspartiernas hemsidor. 
-    **Notera:** Antalet funna artiklar kan vara lägre än det begärda. Detta beror på att vissa partier har inaktiva RSS-flöden 
-    eller att deras senaste inlägg är video-klipp som sållas bort av kvalitetsfiltret.
+    **Notera:** Antalet funna artiklar kan vara lägre än det begärda då vissa partier har inaktiva RSS-flöden 
+    eller att deras senaste inlägg är videoklipp som sållats bort av kvalitetsfiltret.
     """)
 
     num_per_party = st.slider(
@@ -632,12 +647,12 @@ elif page == "Historik":
     # Definiera tidsperioder (kortast till längst)
     today = date.today()
     time_periods = {
-        "Senaste 30 dagarna": (today - timedelta(days=30), today),
-        "Senaste 90 dagarna": (today - timedelta(days=90), today),
-        "Senaste året": (today - timedelta(days=365), today),
-        "Senaste 2 åren": (today - timedelta(days=365*2), today),
+        "Senaste 10 åren": (today - timedelta(days=365*10), today),
         "Senaste 5 åren": (today - timedelta(days=365*5), today),
-        "Senaste 10 åren": (today - timedelta(days=365*10), today)
+        "Senaste 2 åren": (today - timedelta(days=365*2), today),
+        "Senaste året": (today - timedelta(days=365), today),
+        "Senaste 90 dagarna": (today - timedelta(days=90), today),
+        "Senaste 30 dagarna": (today - timedelta(days=30), today)
     }
 
     # Läs lexikon och hämta kategorier
