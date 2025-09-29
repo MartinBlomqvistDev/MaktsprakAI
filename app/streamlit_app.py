@@ -626,14 +626,7 @@ elif page == "Evaluering":
 elif page == "Historik":
     st.header("Analysera retorikens utveckling över tid")
 
-    from datetime import date, timedelta
-    import pandas as pd
-    import plotly.express as px
-    import matplotlib.pyplot as plt
-    from wordcloud import WordCloud 
-    
     # --- 1. Definiera tidsgräns och ladda data ---
-    
     MAX_YEARS = 10 
     today = date.today()
     START_DATE_LIMIT = today - timedelta(days=365 * MAX_YEARS) 

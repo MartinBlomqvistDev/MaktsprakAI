@@ -52,7 +52,6 @@ def fetch_latest_speech_date():
 @st.cache_data(ttl=3600)
 def fetch_latest_speech_date_cached():
     """Returnerar senaste protokoll_datum från tabellen 'speeches' med cache."""
-    # Använder den o-cacheade funktionen som grund
     return fetch_latest_speech_date() 
 
 def fetch_random_speeches(limit: int = 5):
@@ -66,21 +65,34 @@ def fetch_random_speeches(limit: int = 5):
 
 @st.cache_data(ttl=1800)
 def fetch_speeches_historical(start_date, end_date):
-    """Returnerar DataFrame med text och parti för en viss period."""
-    # Konvertera start- och slutdatum till ISO-strängar för garanterad Supabase-kompatibilitet
-    start_date_str = start_date.isoformat() 
-    end_date_str = end_date.isoformat() 
+    """
+    Returnerar DataFrame med text och parti för en viss period.
+    Hämtar i batchar per år för stora datamängder.
+    """
+    dfs = []
+    current_start = start_date
+    while current_start <= end_date:
+        current_end = min(
+            current_start.replace(year=current_start.year + 1) - pd.Timedelta(days=1),
+            end_date
+        )
+        resp = (
+            supabase.table("speeches")
+            .select("text, parti, protokoll_datum")
+            .gte("protokoll_datum", current_start.isoformat())
+            .lte("protokoll_datum", current_end.isoformat())
+            .limit(None)  # Viktigt för att få alla rader
+            .execute()
+        )
+        if resp.data:
+            dfs.append(pd.DataFrame(resp.data))
+        current_start = current_end + pd.Timedelta(days=1)
 
-    resp = (
-        supabase.table("speeches")
-        .select("text, parti, protokoll_datum")
-        .gte("protokoll_datum", start_date_str) # Använd ISO-sträng
-        .lte("protokoll_datum", end_date_str)   # Använd ISO-sträng
-        .execute()
-    )
-    if not resp.data:
-        return pd.DataFrame() 
-    return pd.DataFrame(resp.data)
+    if dfs:
+        df = pd.concat(dfs, ignore_index=True)
+        df['protokoll_datum'] = pd.to_datetime(df['protokoll_datum'], errors='coerce')
+        return df
+    return pd.DataFrame(columns=["text", "parti", "protokoll_datum"])
 
 # -----------------------------
 # Skrivfunktioner
@@ -90,22 +102,17 @@ def insert_speech(row: dict):
     Infogar eller uppdaterar ett tal i tabellen 'speeches'.
     Använder upsert för att hantera dubbletter baserat på 'protokoll_id'.
     """
-    # Vi tvingar fram upsert på 'protokoll_id' för högsta prestanda.
-    # Tabellen måste ha en unikhetsbegränsning (Primary Key) på protokoll_id.
-    
     resp = supabase.table("speeches").upsert(row, on_conflict="protokoll_id").execute()
     
     if resp.data is None:
         logger.error(f"Supabase upsert failed for row: {row}")
         raise Exception(f"Supabase upsert failed: {resp}")
     
-    # Om upsert skapar/uppdaterar en rad, returneras data
     if resp.data:
         logger.info(f"Tal bearbetat (upsert) i 'speeches': {row.get('protokoll_id', 'no-id')}")
         return resp.data
     else:
-        # Detta bör inte hända om datan är korrekt och unikhetsregler finns
-        logger.warning(f"Upsert returnerade ingen data, men gav inget fel för {row.get('protokoll_id')}")
+        logger.warning(f"Upsert returnerade ingen data för {row.get('protokoll_id')}")
         return None
 
 def insert_tweet(row: dict):
