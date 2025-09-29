@@ -238,8 +238,8 @@ def run_live_evaluation(articles_per_party: int = 5):
 # Välkomstsida
 # =====================
 def welcome_page():
-    st.title("MaktspråkAI Dashboard")
-    st.markdown("En interaktiv analys av det politiska språket i Sverige.")
+    st.title("MaktspråkAI: Den politiska språkkartan")
+    st.markdown("Interaktiv AI-analys av partiernas retorik och mönster.")
 
     # News-box CSS
     st.markdown("""
@@ -285,34 +285,28 @@ def welcome_page():
     
         st.divider()
         
-        # ----------------------------------------------------------------------
-        # 1. OM MIG
-        # ----------------------------------------------------------------------
-
-        st.title("MaktspråkAI: Analys av politiskt språkbruk")
-
         st.markdown(
             """
-            ## Om mig: Martin Blomqvist – Systemtänkande & Data Science
+            ## Martin Blomqvist – Systemtänkande & Data Science
 
             Jag heter **Martin Blomqvist** och drivs av att förstå och förbättra komplexa system. Min bakgrund är bred – jag har arbetat i vitt skilda miljöer, från **ekologiskt jordbruk** till avancerad **dataanalys**. Oavsett sammanhang har fokus alltid legat på detsamma: att **hitta den dolda strukturen** i kaoset och bygga lösningar som fungerar i den verkliga världen.
 
             ---
 
-            ### MaktspråkAI – Från helhetssyn till praktik
+            ### MaktspråkAI: projektets mål
             
             **MaktspråkAI** är ett fullskaligt **data science- och NLP-projekt** som tillämpar dessa erfarenheter. Programmet skapades under $\text{EC Utbildnings Data Scientist}$-program och visar hur jag kombinerar min systemanalytiska förmåga med teknisk expertis.
-
+            
             Syftet är att **utforska, analysera och visualisera det politiska språkbruket i Sveriges riksdag** genom att kombinera modern maskininlärning ($\text{AI}$) med robust systemdesign. 
-            
-            Jag tar nu steget ut i yrkeslivet via min LIA och ser fram emot att fortsätta tillämpa och utveckla dessa kunskaper. **Följ gärna min resa in i detta spännande fält!**
-            
+
             ---
 
             ### Nyckelfrågor projektet besvarar:
-            * Kan man **förutsäga ett partis tillhörighet** enbart genom språkbruk?
+            * Kan jag **förutsäga ett partis tillhörighet** enbart genom språkbruk?
             * Vilka **retoriska mönster** skiljer partierna åt i olika frågor?
             * Hur förändras språket över tid i **politiska debatter**?
+
+            Jag tar nu steget ut i yrkeslivet via min LIA och ser fram emot att fortsätta tillämpa och utveckla dessa kunskaper. **Följ gärna min resa in i detta spännande fält!**
 
             ---
 
@@ -321,52 +315,8 @@ def welcome_page():
             * **E-post:** [cm.blomqvist@gmail.com](mailto:cm.blomqvist@gmail.com)
             * **LinkedIn:** [Martin Blomqvist](https://www.linkedin.com/in/martin-blomqvist)
             * **GitHub:** [Martin Blomqvist](https://github.com/martinblomqvistdev)
-
-            ---
             """
         )
-
-        # ----------------------------------------------------------------------
-        # 2. TEKNOLOGI
-        # ----------------------------------------------------------------------
-
-        st.subheader("Teknisk arkitektur")
-
-        st.markdown(
-            """
-            Detta projekt är byggt på en robust och modern **Python-stack**, utformad för att hantera hela AI-livscykeln – från datainsamling till avancerad NLP och interaktiv visualisering. Jag har valt branschledande verktyg för att säkerställa **skalbarhet, reproducerbarhet** och högsta analysprecision.
-            
-            ---
-
-            ### Databehandling & modellkärna (the AI engine)
-
-            | Verktyg | Funktion & analysdjup |
-            | :--- | :--- |
-            | **Transformers (Hugging Face)** | **Kärnan i min NLP-lösning.** Jag utnyttjar och finjusterar **state-of-the-art BERT-modellen (KB/bert-base-swedish-cased)** för banbrytande textklassificering på svenska. Detta möjliggör djup semantisk förståelse och överträffar traditionella metoder i komplexiteten hos politisk text. |
-            | **Scikit-learn** | **Modellutvärdering & baslinjeanalys.** Används för att etablera en pålitlig baslinje med klassiska metoder (t.ex. TF-IDF, SVM) och rigorösa evalueringar (**precision, recall, F1-score**). Säkerställer att transformer-modellerna bevisligen förbättrar modellen, även i svåra fall såsom vid snedvriden data. |
-            | **Pandas & NumPy** | **Ryggraden i Data Science.** Dessa Python-bibliotek används för effektiv datastrukturering, tidsserieanalys och rensning av miljontals textenheter. Hanterar komplexa beräkningar och transformationer nödvändiga för att förbereda NLP-dataset. |
-
-            ---
-
-            ### Webbapplikation & visualisering (the interface)
-
-            | Verktyg | Funktion & interaktion |
-            | :--- | :--- |
-            | **Streamlit** | **Interaktiv webbapplikation.** Bygger den snabba och användarvänliga GUI:n. Gör det möjligt för slutanvändare att **omedelbart testa AI-modeller live**, filtrera analysresultat och utforska data direkt i webbläsaren utan någon lokal installation. |
-            | **Plotly, Matplotlib & Calplot** | **Dynamisk visualisering.** Ger liv åt datan. **Plotly** skapar interaktiva grafer i applikationen, Matplotlib används för statiska analyser, och Calplot visualiserar aktivitetsmönster och trender över tid. |
-
-            ---
-
-            ### Datainfrastruktur & MLOps
-
-            | Verktyg | Funktion & driftsäkerhet |
-            | :--- | :--- |
-            | **PostgreSQL (via Supabase)** | **Skalbar databaslösning.** Databasen hanterar effektivt över **40 000 riksdagsanföranden** med komplett metadata. Den driftade PostgreSQL-instansen via Supabase säkerställer **snabb och pålitlig åtkomst** till stora datavolymer. |
-            | **ETL & Reproducerbarhet** | **Robust data pipeline.** ETL-pipelinen (Extract, Transform, Load) uppdaterar databasen direkt. Jag använder checkpointing, loggning och weighted sampling för att säkerställa att modellträning är **reproducerbar** och att nya data automatiskt införlivas i analysen. |
-            """
-        )
-        st.divider() 
-
 
     # === NYHETSRUTAN ===
     with news_col:
