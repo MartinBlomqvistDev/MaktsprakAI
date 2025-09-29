@@ -290,27 +290,23 @@ def welcome_page():
             ## Martin Blomqvist – Systemtänkande & Data Science
 
             Jag heter **Martin Blomqvist** och drivs av att förstå och förbättra komplexa system. Min bakgrund är bred – jag har arbetat i vitt skilda miljöer, från **ekologiskt jordbruk** till avancerad **dataanalys**. Oavsett sammanhang har fokus alltid legat på detsamma: att **hitta den dolda strukturen** i kaoset och bygga lösningar som fungerar i den verkliga världen.
+            
+            ---
+            
+            **MaktspråkAI** är en direkt tillämpning av dessa erfarenheter. Det är ett fullskaligt **data science- och NLP-projekt** som skapades under $\text{EC Utbildnings Data Scientist}$-program. Det visar hur jag kombinerar min systemanalytiska förmåga med teknisk expertis.
+
+            **Projektets mål** är att **utforska, analysera och visualisera det politiska språkbruket i Sveriges riksdag** genom att kombinera modern maskininlärning (AI) med robust systemdesign. Jag tar nu steget ut i yrkeslivet via min LIA och ser fram emot att fortsätta tillämpa och utveckla dessa kunskaper. **Följ gärna min resa in i detta spännande fält!**
 
             ---
 
-            ### MaktspråkAI: projektets mål
-            
-            **MaktspråkAI** är ett fullskaligt **data science- och NLP-projekt** som tillämpar dessa erfarenheter. Programmet skapades under $\text{EC Utbildnings Data Scientist}$-program och visar hur jag kombinerar min systemanalytiska förmåga med teknisk expertis.
-            
-            Syftet är att **utforska, analysera och visualisera det politiska språkbruket i Sveriges riksdag** genom att kombinera modern maskininlärning ($\text{AI}$) med robust systemdesign. 
-
-            ---
-
-            ### Nyckelfrågor projektet besvarar:
+            *Nyckelfrågor projektet besvarar:*
             * Kan jag **förutsäga ett partis tillhörighet** enbart genom språkbruk?
             * Vilka **retoriska mönster** skiljer partierna åt i olika frågor?
             * Hur förändras språket över tid i **politiska debatter**?
 
-            Jag tar nu steget ut i yrkeslivet via min LIA och ser fram emot att fortsätta tillämpa och utveckla dessa kunskaper. **Följ gärna min resa in i detta spännande fält!**
-
             ---
-
-            ### Kontakt & Portfolio
+            
+            **Kontakt & Portfolio**
 
             * **E-post:** [cm.blomqvist@gmail.com](mailto:cm.blomqvist@gmail.com)
             * **LinkedIn:** [Martin Blomqvist](https://www.linkedin.com/in/martin-blomqvist)
