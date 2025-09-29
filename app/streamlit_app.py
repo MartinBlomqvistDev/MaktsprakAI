@@ -634,7 +634,7 @@ elif page == "Historik":
     
     # --- 1. Definiera tidsgräns och ladda data ---
     
-    MAX_YEARS = 5 
+    MAX_YEARS = 10 
     today = date.today()
     START_DATE_LIMIT = today - timedelta(days=365 * MAX_YEARS) 
 
@@ -658,15 +658,16 @@ elif page == "Historik":
             st.warning(f"Hittade ingen data alls inom den valda tidsgränsen ({START_DATE_LIMIT.year} till {today.year}).")
             st.stop()
 
-        # 2. Robust hantering av DATUM (Löser AttributeError)
+        # 2. Robust hantering av DATUM
         df_all_data['protokoll_datum'] = pd.to_datetime(df_all_data['protokoll_datum'], errors='coerce') 
         valid_dates_df = df_all_data.dropna(subset=['protokoll_datum'])
 
-        # Hitta det äldsta och nyaste giltiga datumet för debugg
+        # Debug-info: visa både efterfrågat och faktiskt intervall
+        requested_range = f"{START_DATE_LIMIT} → {today}"
         if not valid_dates_df.empty:
             min_date = valid_dates_df['protokoll_datum'].min().strftime('%Y-%m-%d')
             max_date = valid_dates_df['protokoll_datum'].max().strftime('%Y-%m-%d')
-            st.info(f"Datan som hämtades sträcker sig från: **{min_date}** till **{max_date}**")
+            st.info(f"Efterfrågad period: **{requested_range}**\n\nData i databasen täcker: **{min_date} → {max_date}**")
         else:
             st.warning("Hittade inga giltiga datum i den hämtade datan efter rensning.")
             st.stop()
@@ -682,12 +683,27 @@ elif page == "Historik":
         st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
         st.markdown(f"Visar trenden för de senaste {MAX_YEARS} åren med årlig upplösning.")
         
-        fig = px.line(df_plot_yearly, x="År", y=category_to_track, color="parti", markers=True, title=f"Trend: '{category_to_track}' per parti över tid (Årlig upplösning)")
+        fig = px.line(
+            df_plot_yearly,
+            x="År",
+            y=category_to_track,
+            color="parti",
+            markers=True,
+            title=f"Trend: '{category_to_track}' per parti över tid (Årlig upplösning)"
+        )
         
-        fig.update_xaxes(title_text="År", tickvals=unique_years, ticktext=[str(year) for year in unique_years], showgrid=True)
-        fig.update_yaxes(title_text=f"Genomsnittlig poäng ({category_to_track})", range=[df_plot_yearly[category_to_track].min() * 0.9, df_plot_yearly[category_to_track].max() * 1.1])
+        fig.update_xaxes(
+            title_text="År", 
+            tickvals=unique_years, 
+            ticktext=[str(year) for year in unique_years], 
+            showgrid=True
+        )
+        fig.update_yaxes(
+            title_text=f"Genomsnittlig poäng ({category_to_track})", 
+            range=[df_plot_yearly[category_to_track].min() * 0.9,
+                   df_plot_yearly[category_to_track].max() * 1.1]
+        )
         st.plotly_chart(fig, config={"responsive": True})
-
 
     st.divider()
 
@@ -721,7 +737,6 @@ elif page == "Historik":
         st.markdown(f"**Visar ordmoln baserat på tal under perioden: {period_for_cloud}**")
         cols = st.columns(4)
 
-        # Word Cloud logik
         for i, party in enumerate(PARTY_ORDER):
             with cols[i % 4]:
                 df_party = df_all_data_cloud[df_all_data_cloud['parti'] == party]
@@ -735,14 +750,19 @@ elif page == "Historik":
 
                 if cleaned_text_for_cloud:
                     try:
-                        wc = WordCloud(width=400, height=300, background_color="white", collocations=False).generate(cleaned_text_for_cloud)
+                        wc = WordCloud(
+                            width=400,
+                            height=300,
+                            background_color="white",
+                            collocations=False
+                        ).generate(cleaned_text_for_cloud)
                         st.write(f"**{party}**")
                         fig_wc, ax = plt.subplots(figsize=(4, 3))
                         ax.imshow(wc, interpolation='bilinear')
                         ax.axis("off")
                         st.pyplot(fig_wc, bbox_inches='tight', dpi=fig_wc.dpi)
                         plt.close(fig_wc)
-                    except Exception as e:
+                    except Exception:
                         st.error(f"Kunde inte generera moln för {party}.")
                 else:
                     st.write(f"**{party}** (För lite text)")
