@@ -634,7 +634,7 @@ elif page == "Historik":
     
     # --- 1. Definiera tidsgräns och ladda data ---
     
-    MAX_YEARS = 10 
+    MAX_YEARS = 5 
     today = date.today()
     START_DATE_LIMIT = today - timedelta(days=365 * MAX_YEARS) 
 
@@ -649,7 +649,7 @@ elif page == "Historik":
         key="historic_category_select"
     )
 
-    with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}'..."):
+    with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}' tio år tillbaka..."):
         
         # Hämta ALL data inom den maximala tidsperioden
         df_all_data = fetch_speeches_historical(START_DATE_LIMIT, today)
