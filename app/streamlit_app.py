@@ -640,6 +640,7 @@ elif page == "Historik":
     START_DATE_LIMIT = today - timedelta(days=365 * MAX_YEARS) 
 
     # Läs lexikon och hämta kategorier
+    # OBS: Antar att LEXICON_PATH och PARTY_ORDER är definierade globalt eller i en modul
     lex_df_temp = pd.read_csv(LEXICON_PATH)
     ton_columns = lex_df_temp['kategori'].unique().tolist()
 
@@ -653,6 +654,7 @@ elif page == "Historik":
     with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}'..."):
         
         # Hämta ALL data inom den maximala tidsperioden
+        # OBS: Antar att fetch_speeches_in_period är definierad
         df_all_data = fetch_speeches_in_period(START_DATE_LIMIT, today)
         
         if df_all_data.empty:
@@ -661,9 +663,11 @@ elif page == "Historik":
             # 2. Aggregera till KURVOR (per ÅR)
             
             # SÄKERSTÄLL DATETIME-KONVERTERING
+            # OBS: Antar att 'protokoll_datum' är en kolumn i df_all_data
             df_all_data['protokoll_datum'] = pd.to_datetime(df_all_data['protokoll_datum'])
 
             # Applicera tonlexikonet
+            # OBS: Antar att apply_ton_lexicon är definierad
             df_ton = apply_ton_lexicon(df_all_data, text_col="text", lexicon_path=LEXICON_PATH)
             
             # Lägg till en 'År'-kolumn för gruppering
@@ -672,8 +676,11 @@ elif page == "Historik":
             # Aggregera till ETT genomsnitt per ÅR och PARTI
             df_plot_yearly = df_ton.groupby(['parti', 'År'], observed=False)[category_to_track].mean().reset_index()
             
-            # Konvertera 'År' från Period till sträng för Plotly
-            df_plot_yearly['År'] = df_plot_yearly['År'].astype(str)
+            # --- FIX: Konvertera År till rent heltal för Plotly ---
+            df_plot_yearly['År'] = df_plot_yearly['År'].astype(str).str.split('-').str[0].astype(int) 
+
+            # Hämta unika årtal för att tvinga axelmarkeringar
+            unique_years = sorted(df_plot_yearly['År'].unique())
 
             # 3. Visualisering av Kurvor
             st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
@@ -688,7 +695,13 @@ elif page == "Historik":
                 title=f"Trend: '{category_to_track}' per parti över tid (Årlig upplösning)"
             )
             
-            fig.update_xaxes(title_text="År", showgrid=True)
+            # --- FIX: Tvinga axelmarkeringarna till helår ---
+            fig.update_xaxes(
+                title_text="År",
+                tickvals=unique_years,  # Använder endast årtalen med data
+                ticktext=[str(year) for year in unique_years], # Formatera som strängar (t.ex. '2015')
+                showgrid=True
+            )
             fig.update_yaxes(
                 title_text=f"Genomsnittlig poäng ({category_to_track})",
                 range=[df_plot_yearly[category_to_track].min() * 0.9, df_plot_yearly[category_to_track].max() * 1.1]
@@ -727,6 +740,7 @@ elif page == "Historik":
         st.markdown(f"**Visar ordmoln baserat på tal under perioden: {period_for_cloud}**")
         cols = st.columns(4)
 
+        # OBS: Antar att PARTY_ORDER och preprocess_for_wordcloud är definierade
         for i, party in enumerate(PARTY_ORDER):
             with cols[i % 4]:
                 df_party = df_all_data_cloud[df_all_data_cloud['parti'] == party]
@@ -736,6 +750,7 @@ elif page == "Historik":
                     continue
 
                 raw_text_blob = " ".join(df_party["text"].dropna().tolist())
+                # OBS: Antar att preprocess_for_wordcloud är definierad
                 cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
 
                 if cleaned_text_for_cloud:
