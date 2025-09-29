@@ -36,7 +36,7 @@ from src.maktsprak_pipeline.db import (
     fetch_speeches_count,
     fetch_latest_speech_date_cached,
     fetch_random_speeches,
-    fetch_speeches_in_period,
+    fetch_speeches_historical,
     insert_speech,
     insert_tweet
 )
@@ -456,7 +456,7 @@ elif page == "Språkbruk & Retorik":
 
     # --- Hämta data ---
     with st.spinner("Hämtar och analyserar data…"):
-        df = fetch_speeches_in_period(start_date, end_date)
+        df = fetch_speeches_historical(start_date, end_date)
 
     if df.empty:
         st.warning("Kunde inte hitta någon data alls i databasen.")
@@ -652,7 +652,7 @@ elif page == "Historik":
     with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}'..."):
         
         # Hämta ALL data inom den maximala tidsperioden
-        df_all_data = fetch_speeches_in_period(START_DATE_LIMIT, today, cache_buster=2)
+        df_all_data = fetch_speeches_historical(START_DATE_LIMIT, today)
         
         if df_all_data.empty:
             st.warning(f"Hittade ingen data alls inom den valda tidsgränsen ({START_DATE_LIMIT.year} till {today.year}).")
@@ -713,7 +713,7 @@ elif page == "Historik":
     )
 
     start, end = time_periods_for_cloud[period_for_cloud]
-    df_all_data_cloud = fetch_speeches_in_period(start, end)[['text', 'parti']]
+    df_all_data_cloud = fetch_speeches_historical(start, end)[['text', 'parti']]
 
     if df_all_data_cloud.empty:
         st.warning(f"Ingen data hittades för ordmoln under '{period_for_cloud}'.")

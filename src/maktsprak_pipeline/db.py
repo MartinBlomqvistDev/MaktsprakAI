@@ -64,7 +64,7 @@ def fetch_random_speeches(limit: int = 5):
     random.shuffle(data)
     return data[:limit]
 
-def fetch_speeches_in_period(start_date, end_date, cache_buster=1): # <--- LÄGG TILL cache_buster=1
+def fetch_speeches_historical(start_date, end_date):
     """Returnerar DataFrame med text och parti för en viss period."""
     # Konvertera start- och slutdatum till ISO-strängar för garanterad Supabase-kompatibilitet
     start_date_str = start_date.isoformat() 
@@ -83,8 +83,8 @@ def fetch_speeches_in_period(start_date, end_date, cache_buster=1): # <--- LÄGG
 
 # Retry-decorator för temporära nätverksproblem
 @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
-def safe_fetch_speeches_in_period(start_date, end_date):
-    return fetch_speeches_in_period(start_date, end_date)
+def fetch_speeches_historical(start_date, end_date):
+    return fetch_speeches_historical(start_date, end_date)
 
 # -----------------------------
 # Skrivfunktioner
