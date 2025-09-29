@@ -64,34 +64,32 @@ def fetch_random_speeches(limit: int = 5):
     return data[:limit]
 
 @st.cache_data(ttl=1800)
-def fetch_speeches_historical(start_date, end_date):
-    """
-    Returnerar DataFrame med text och parti för en viss period.
-    Hämtar i batchar per år för stora datamängder.
-    """
+def fetch_all_historical_speeches():
     dfs = []
-    current_start = start_date
-    while current_start <= end_date:
-        current_end = min(
-            current_start.replace(year=current_start.year + 1) - pd.Timedelta(days=1),
-            end_date
-        )
+    batch_size = 1000
+    offset = 0
+
+    while True:
         resp = (
             supabase.table("speeches")
             .select("text, parti, protokoll_datum")
-            .gte("protokoll_datum", current_start.isoformat())
-            .lte("protokoll_datum", current_end.isoformat())
-            .limit(None)  # Viktigt för att få alla rader
+            .range(offset, offset + batch_size - 1)
             .execute()
         )
+
         if resp.data:
             dfs.append(pd.DataFrame(resp.data))
-        current_start = current_end + pd.Timedelta(days=1)
+            if len(resp.data) < batch_size:
+                break  # Ingen mer data kvar
+            offset += batch_size
+        else:
+            break
 
     if dfs:
         df = pd.concat(dfs, ignore_index=True)
         df['protokoll_datum'] = pd.to_datetime(df['protokoll_datum'], errors='coerce')
-        return df
+        return df.sort_values("protokoll_datum")
+    
     return pd.DataFrame(columns=["text", "parti", "protokoll_datum"])
 
 # -----------------------------
