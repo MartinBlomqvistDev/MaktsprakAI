@@ -64,6 +64,7 @@ def fetch_random_speeches(limit: int = 5):
     random.shuffle(data)
     return data[:limit]
 
+@st.cache_data(ttl=1800)
 def fetch_speeches_historical(start_date, end_date):
     """Returnerar DataFrame med text och parti för en viss period."""
     # Konvertera start- och slutdatum till ISO-strängar för garanterad Supabase-kompatibilitet
