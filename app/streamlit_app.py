@@ -279,7 +279,7 @@ def welcome_page():
         latest_speech_date = fetch_latest_speech_date_cached()
 
         col1, col2, col3 = st.columns(3)
-        col1.metric(f"Träffsäkerhet (de {total_live_articles} senaste artiklarna)", f"{live_accuracy:.1f}%")
+        col1.metric(f"Träffsäkerhet ({total_live_articles} artiklar)", f"{live_accuracy:.1f}%")
         col2.metric("Totalt anföranden i databasen", f"{total_speeches:,}".replace(",", " "))
         col3.metric("Senaste anförande", latest_speech_date)
     
@@ -652,7 +652,7 @@ elif page == "Historik":
     with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}' tio år tillbaka..."):
         
         # Hämta ALL data inom den maximala tidsperioden
-        df_all_data = fetch_speeches_historical(START_DATE_LIMIT, today)
+        df_all_data = fetch_speeches_historical(START_DATE_LIMIT, today, cache_buster=3)
         
         if df_all_data.empty:
             st.warning(f"Hittade ingen data alls inom den valda tidsgränsen ({START_DATE_LIMIT.year} till {today.year}).")
