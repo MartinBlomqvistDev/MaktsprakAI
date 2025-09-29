@@ -179,7 +179,7 @@ def is_unwanted_content(title: str, content: str) -> bool:
     job_ad_keywords = ["jobba hos oss", "söker", "ansök", "kvalifikationer", "anställning", "rekryterar", "ledig tjänst"]
     if any(k in title_lower or k in content_lower[:500] for k in job_ad_keywords):
         return True
-    weak_filter_keywords = ["video:", "live:", "se talet", "anförande", "pressträff", "intervju med", "frågestund", "turné", "besöker"]
+    weak_filter_keywords = ["video:", "live:", "se talet", "anförande", "frågestund", "turné", "besöker"]
     if any(k in title_lower for k in weak_filter_keywords) and text_length < 500:
         return True
     return False
@@ -649,115 +649,100 @@ elif page == "Historik":
         key="historic_category_select"
     )
 
-    # --- Huvudanalys (Linjediagram) ---
-    try:
-        with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}'..."):
-            
-            # Hämta ALL data inom den maximala tidsperioden
-            df_all_data = fetch_speeches_in_period(START_DATE_LIMIT, today)
-            
-            if df_all_data.empty:
-                st.warning(f"Hittade ingen data alls inom den valda tidsgränsen ({START_DATE_LIMIT.year} till {today.year}).")
-                # Vi avbryter processen här om ingen data finns
-                raise ValueError("Inget data hittades.") 
+    with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}'..."):
+        
+        # Hämta ALL data inom den maximala tidsperioden
+        df_all_data = fetch_speeches_in_period(START_DATE_LIMIT, today)
+        
+        if df_all_data.empty:
+            st.warning(f"Hittade ingen data alls inom den valda tidsgränsen ({START_DATE_LIMIT.year} till {today.year}).")
+            st.stop()
 
-            # 2. Robust hantering av DATUM (Löser AttributeError)
-            df_all_data['protokoll_datum'] = pd.to_datetime(df_all_data['protokoll_datum'], errors='coerce') 
-            valid_dates_df = df_all_data.dropna(subset=['protokoll_datum'])
+        # 2. Robust hantering av DATUM (Löser AttributeError)
+        df_all_data['protokoll_datum'] = pd.to_datetime(df_all_data['protokoll_datum'], errors='coerce') 
+        valid_dates_df = df_all_data.dropna(subset=['protokoll_datum'])
 
-            # Hitta det äldsta och nyaste giltiga datumet för debugg
-            if not valid_dates_df.empty:
-                min_date = valid_dates_df['protokoll_datum'].min().strftime('%Y-%m-%d')
-                max_date = valid_dates_df['protokoll_datum'].max().strftime('%Y-%m-%d')
-                st.info(f"Datan som hämtades sträcker sig från: **{min_date}** till **{max_date}**")
-            else:
-                st.warning("Hittade inga giltiga datum i den hämtade datan efter rensning.")
-                raise ValueError("Inga giltiga datum kvar efter rensning.")
+        # Hitta det äldsta och nyaste giltiga datumet för debugg
+        if not valid_dates_df.empty:
+            min_date = valid_dates_df['protokoll_datum'].min().strftime('%Y-%m-%d')
+            max_date = valid_dates_df['protokoll_datum'].max().strftime('%Y-%m-%d')
+            st.info(f"Datan som hämtades sträcker sig från: **{min_date}** till **{max_date}**")
+        else:
+            st.warning("Hittade inga giltiga datum i den hämtade datan efter rensning.")
+            st.stop()
 
-            # 3. Aggregera till KURVOR (per ÅR)
-            df_ton = apply_ton_lexicon(valid_dates_df, text_col="text", lexicon_path=LEXICON_PATH)
-            df_ton['År'] = df_ton['protokoll_datum'].dt.to_period('Y') 
-            df_plot_yearly = df_ton.groupby(['parti', 'År'], observed=False)[category_to_track].mean().reset_index()
-            df_plot_yearly['År'] = df_plot_yearly['År'].astype(str).str.split('-').str[0].astype(int) 
-            unique_years = sorted(df_plot_yearly['År'].unique())
+        # 3. Aggregera till KURVOR (per ÅR)
+        df_ton = apply_ton_lexicon(valid_dates_df, text_col="text", lexicon_path=LEXICON_PATH)
+        df_ton['År'] = df_ton['protokoll_datum'].dt.to_period('Y') 
+        df_plot_yearly = df_ton.groupby(['parti', 'År'], observed=False)[category_to_track].mean().reset_index()
+        df_plot_yearly['År'] = df_plot_yearly['År'].astype(str).str.split('-').str[0].astype(int) 
+        unique_years = sorted(df_plot_yearly['År'].unique())
 
-            # 4. Visualisering
-            st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
-            st.markdown(f"Visar trenden för de senaste {MAX_YEARS} åren med årlig upplösning.")
-            
-            # Generera Plotly-fig
-            fig = px.line(
-                df_plot_yearly,
-                x="År", y=category_to_track, color="parti", markers=True,
-                title=f"Trend: '{category_to_track}' per parti över tid (Årlig upplösning)"
-            )
-            fig.update_xaxes(title_text="År", tickvals=unique_years, ticktext=[str(year) for year in unique_years], showgrid=True)
-            fig.update_yaxes(title_text=f"Genomsnittlig poäng ({category_to_track})",
-                range=[df_plot_yearly[category_to_track].min() * 0.9, df_plot_yearly[category_to_track].max() * 1.1])
-            st.plotly_chart(fig, config={"responsive": True})
+        # 4. Visualisering
+        st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
+        st.markdown(f"Visar trenden för de senaste {MAX_YEARS} åren med årlig upplösning.")
+        
+        fig = px.line(df_plot_yearly, x="År", y=category_to_track, color="parti", markers=True, title=f"Trend: '{category_to_track}' per parti över tid (Årlig upplösning)")
+        
+        fig.update_xaxes(title_text="År", tickvals=unique_years, ticktext=[str(year) for year in unique_years], showgrid=True)
+        fig.update_yaxes(title_text=f"Genomsnittlig poäng ({category_to_track})", range=[df_plot_yearly[category_to_track].min() * 0.9, df_plot_yearly[category_to_track].max() * 1.1])
+        st.plotly_chart(fig, config={"responsive": True})
 
-    except ValueError as ve:
-        # Hantera datafel som vi själva genererar (t.ex. om data saknas)
-        st.error(f"Kunde inte slutföra analysen: {ve}")
-    except Exception as e:
-        # Hantera oväntade systemfel (t.ex. Plotly-fel, Pandas-fel)
-        st.error(f"Ett oväntat fel inträffade under analysen av historisk data. Kontrollera om kategorin har data.")
-        #st.exception(e) # Använd för lokal debugging
 
     st.divider()
 
-    # --- WordClouds per parti (Med Felhantering) ---
-    try:
-        st.subheader("Jämför partiernas vanligaste ord")
-        st.markdown("Välj en tidsperiod nedan för att se ordmoln sida vid sida.")
+    # --- WordClouds per parti ---
+    st.subheader("Jämför partiernas vanligaste ord")
+    st.markdown("Välj en tidsperiod nedan för att se ordmoln sida vid sida.")
 
-        # Definiera endast de korta, relevanta tidsperioderna för ordmoln
-        time_periods_for_cloud = {
-            "Senaste året": (today - timedelta(days=365), today),
-            "Senaste 90 dagarna": (today - timedelta(days=90), today),
-            "Senaste 30 dagarna": (today - timedelta(days=30), today)
-        }
-        
-        period_options_reversed = list(time_periods_for_cloud.keys())[::-1]
-        period_for_cloud = st.selectbox(
-            "Välj period för ordmolnen:", period_options_reversed, index=0, key="all_party_period_select"
-        )
+    time_periods_for_cloud = {
+        "Senaste 10 åren": (today - timedelta(days=365*10), today),
+        "Senaste 5 åren": (today - timedelta(days=365*5), today),
+        "Senaste 2 åren": (today - timedelta(days=365*2), today),
+        "Senaste året": (today - timedelta(days=365), today),
+        "Senaste 90 dagarna": (today - timedelta(days=90), today),
+        "Senaste 30 dagarna": (today - timedelta(days=30), today)
+    }
+    
+    period_options_reversed = list(time_periods_for_cloud.keys())[::-1]
+    period_for_cloud = st.selectbox(
+        "Välj period för ordmolnen:",
+        period_options_reversed,
+        index=0,
+        key="all_party_period_select"
+    )
 
-        start, end = time_periods_for_cloud[period_for_cloud]
-        df_all_data_cloud = fetch_speeches_in_period(start, end)[['text', 'parti']]
+    start, end = time_periods_for_cloud[period_for_cloud]
+    df_all_data_cloud = fetch_speeches_in_period(start, end)[['text', 'parti']]
 
-        if df_all_data_cloud.empty:
-            st.warning(f"Ingen data hittades för ordmoln under '{period_for_cloud}'.")
-        else:
-            st.markdown(f"**Visar ordmoln baserat på tal under perioden: {period_for_cloud}**")
-            cols = st.columns(4)
+    if df_all_data_cloud.empty:
+        st.warning(f"Ingen data hittades för ordmoln under '{period_for_cloud}'.")
+    else:
+        st.markdown(f"**Visar ordmoln baserat på tal under perioden: {period_for_cloud}**")
+        cols = st.columns(4)
 
-            for i, party in enumerate(PARTY_ORDER):
-                with cols[i % 4]:
-                    df_party = df_all_data_cloud[df_all_data_cloud['parti'] == party]
-                    
-                    if df_party.empty:
-                        st.write(f"**{party}** (Ingen data)")
-                        continue
+        # Word Cloud logik
+        for i, party in enumerate(PARTY_ORDER):
+            with cols[i % 4]:
+                df_party = df_all_data_cloud[df_all_data_cloud['parti'] == party]
+                
+                if df_party.empty:
+                    st.write(f"**{party}** (Ingen data)")
+                    continue
 
-                    raw_text_blob = " ".join(df_party["text"].dropna().tolist())
-                    cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
+                raw_text_blob = " ".join(df_party["text"].dropna().tolist())
+                cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
 
-                    if cleaned_text_for_cloud:
-                        # Den inre try/except för WordCloud (som fanns tidigare) kan behållas
-                        try:
-                            wc = WordCloud(width=400, height=300, background_color="white", collocations=False).generate(cleaned_text_for_cloud)
-                            st.write(f"**{party}**")
-                            fig_wc, ax = plt.subplots(figsize=(4, 3))
-                            ax.imshow(wc, interpolation='bilinear')
-                            ax.axis("off")
-                            st.pyplot(fig_wc, bbox_inches='tight', dpi=fig_wc.dpi)
-                            plt.close(fig_wc)
-                        except Exception as e:
-                            st.error(f"Kunde inte generera moln för {party} på grund av textfel.")
-                    else:
-                        st.write(f"**{party}** (För lite text)")
-                        
-    except Exception as e:
-        st.error("Ett oväntat fel inträffade i WordCloud-sektionen.")
-        #st.exception(e) # Använd för lokal debugging
+                if cleaned_text_for_cloud:
+                    try:
+                        wc = WordCloud(width=400, height=300, background_color="white", collocations=False).generate(cleaned_text_for_cloud)
+                        st.write(f"**{party}**")
+                        fig_wc, ax = plt.subplots(figsize=(4, 3))
+                        ax.imshow(wc, interpolation='bilinear')
+                        ax.axis("off")
+                        st.pyplot(fig_wc, bbox_inches='tight', dpi=fig_wc.dpi)
+                        plt.close(fig_wc)
+                    except Exception as e:
+                        st.error(f"Kunde inte generera moln för {party}.")
+                else:
+                    st.write(f"**{party}** (För lite text)")

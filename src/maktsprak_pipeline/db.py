@@ -49,20 +49,11 @@ def fetch_latest_speech_date():
         return None
     return resp.data[0]["protokoll_datum"]
 
+@st.cache_data(ttl=3600)
 def fetch_latest_speech_date_cached():
-    """Returnerar senaste protokoll_datum med år-filter för stora tabeller."""
-    current_year = datetime.now().year
-    resp = (
-        supabase.table("speeches")
-        .select("protokoll_datum")
-        .gte("protokoll_datum", f"{current_year}-01-01")
-        .order("protokoll_datum", desc=True)
-        .limit(1)
-        .execute()
-    )
-    if not resp.data:
-        return None
-    return resp.data[0]["protokoll_datum"]
+    """Returnerar senaste protokoll_datum från tabellen 'speeches' med cache."""
+    # Använder den o-cacheade funktionen som grund
+    return fetch_latest_speech_date() 
 
 def fetch_random_speeches(limit: int = 5):
     """Hämtar slumpmässiga anföranden."""
@@ -76,15 +67,19 @@ def fetch_random_speeches(limit: int = 5):
 @st.cache_data(ttl=1800)
 def fetch_speeches_in_period(start_date, end_date):
     """Returnerar DataFrame med text och parti för en viss period."""
+    # Konvertera start- och slutdatum till ISO-strängar för garanterad Supabase-kompatibilitet
+    start_date_str = start_date.isoformat() 
+    end_date_str = end_date.isoformat() 
+
     resp = (
         supabase.table("speeches")
         .select("text, parti, protokoll_datum")
-        .gte("protokoll_datum", str(start_date))
-        .lte("protokoll_datum", str(end_date))
+        .gte("protokoll_datum", start_date_str) # Använd ISO-sträng
+        .lte("protokoll_datum", end_date_str)   # Använd ISO-sträng
         .execute()
     )
     if not resp.data:
-        return pd.DataFrame()
+        return pd.DataFrame() 
     return pd.DataFrame(resp.data)
 
 # Retry-decorator för temporära nätverksproblem
@@ -97,39 +92,26 @@ def safe_fetch_speeches_in_period(start_date, end_date):
 # -----------------------------
 def insert_speech(row: dict):
     """
-    Infogar ett nytt tal i tabellen 'speeches', undviker dubbletter.
-    Dubblettkontroll baseras på 'protokoll_id' om finns, annars 'protokoll_datum + parti'.
+    Infogar eller uppdaterar ett tal i tabellen 'speeches'.
+    Använder upsert för att hantera dubbletter baserat på 'protokoll_id'.
     """
-    # --- Kontroll mot protokoll_id ---
-    if "protokoll_id" in row:
-        existing = (
-            supabase.table("speeches")
-            .select("protokoll_id")
-            .eq("protokoll_id", row["protokoll_id"])
-            .execute()
-        )
-        if existing.data:
-            logger.warning(f"Tal redan finns: protokoll_id {row['protokoll_id']} – hoppar över.")
-            return existing.data
-
-    # --- Fallback: kontroll mot datum + parti ---
-    existing = (
-        supabase.table("speeches")
-        .select("protokoll_id")
-        .eq("protokoll_datum", row["protokoll_datum"])
-        .eq("parti", row["parti"])
-        .execute()
-    )
-    if existing.data:
-        logger.warning(f"Tal redan finns för parti {row['parti']} på datum {row['protokoll_datum']} – hoppar över.")
-        return existing.data
-
-    # --- Insert om ingen dubblett ---
-    resp = supabase.table("speeches").insert(row).execute()
+    # Vi tvingar fram upsert på 'protokoll_id' för högsta prestanda.
+    # Tabellen måste ha en unikhetsbegränsning (Primary Key) på protokoll_id.
+    
+    resp = supabase.table("speeches").upsert(row, on_conflict="protokoll_id").execute()
+    
     if resp.data is None:
-        raise Exception(f"Supabase insert failed: {resp}")
-    logger.info(f"Nytt tal infogat i 'speeches': {row.get('protokoll_id', 'no-id')}")
-    return resp.data
+        logger.error(f"Supabase upsert failed for row: {row}")
+        raise Exception(f"Supabase upsert failed: {resp}")
+    
+    # Om upsert skapar/uppdaterar en rad, returneras data
+    if resp.data:
+        logger.info(f"Tal bearbetat (upsert) i 'speeches': {row.get('protokoll_id', 'no-id')}")
+        return resp.data
+    else:
+        # Detta bör inte hända om datan är korrekt och unikhetsregler finns
+        logger.warning(f"Upsert returnerade ingen data, men gav inget fel för {row.get('protokoll_id')}")
+        return None
 
 def insert_tweet(row: dict):
     """Infogar en ny tweet, undviker dubbletter baserat på tweet_id."""
