@@ -627,17 +627,17 @@ elif page == "Historik":
     st.header("Analysera retorikens utveckling över tid")
 
     from datetime import date, timedelta
-
-    # Definiera tidsperioder (kortast till längst)
+    import pandas as pd
+    import plotly.express as px
+    import matplotlib.pyplot as plt
+    from wordcloud import WordCloud 
+    
+    # --- 1. Definiera tidsgräns och ladda data för Linjediagrammet ---
+    
+    # Vi sätter maxgränsen till 10 år, men du kan ändra denna.
+    MAX_YEARS = 10 
     today = date.today()
-    time_periods = {
-        "Senaste 10 åren": (today - timedelta(days=365*10), today),
-        "Senaste 5 åren": (today - timedelta(days=365*5), today),
-        "Senaste 2 åren": (today - timedelta(days=365*2), today),
-        "Senaste året": (today - timedelta(days=365), today),
-        "Senaste 90 dagarna": (today - timedelta(days=90), today),
-        "Senaste 30 dagarna": (today - timedelta(days=30), today)
-    }
+    START_DATE_LIMIT = today - timedelta(days=365 * MAX_YEARS) 
 
     # Läs lexikon och hämta kategorier
     lex_df_temp = pd.read_csv(LEXICON_PATH)
@@ -650,50 +650,52 @@ elif page == "Historik":
         key="historic_category_select"
     )
 
-    all_results = []
-
     with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}'..."):
-        for period_name, (start_date, end_date) in time_periods.items():
-            df_period = fetch_speeches_in_period(start_date, end_date)
-            
-            # Skapa ett ramverk med alla partier, även om data saknas
-            df_period_full = pd.DataFrame({'parti': PARTY_ORDER})
-            
-            if not df_period.empty:
-                df_ton = apply_ton_lexicon(df_period, text_col="text", lexicon_path=LEXICON_PATH)
-                period_profile = df_ton.groupby('parti', observed=False)[category_to_track].mean().reset_index()
-                df_period_full = df_period_full.merge(period_profile, on='parti', how='left').fillna(0)
-
-            df_period_full['Period'] = period_name
-            df_period_full['Period_Sort'] = list(time_periods.keys()).index(period_name)
-            all_results.append(df_period_full)
-
-    if not all_results:
-        st.warning(f"Hittade ingen data alls under de analyserade tidsperioderna.")
-    else:
-        df_plot = pd.concat(all_results).reset_index(drop=True)
         
-        st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
-        st.info("Varje linje representerar ett parti. Äldsta tidsperioden visas till vänster.")
+        # Hämta ALL data inom den maximala tidsperioden
+        df_all_data = fetch_speeches_in_period(START_DATE_LIMIT, today)
+        
+        if df_all_data.empty:
+            st.warning(f"Hittade ingen data alls inom den valda tidsgränsen ({START_DATE_LIMIT.year} till {today.year}).")
+        else:
+            # 2. Aggregera till KURVOR (per ÅR)
+            
+            # SÄKERSTÄLL DATETIME-KONVERTERING
+            df_all_data['protokoll_datum'] = pd.to_datetime(df_all_data['protokoll_datum'])
 
-        # Visualisering: linjediagram med tidsperioder i ordning
-        ordered_periods = list(time_periods.keys())
-        fig = px.line(
-            df_plot,
-            x="Period",
-            y=category_to_track,
-            color="parti",
-            markers=True,
-            category_orders={"Period": ordered_periods},
-            title=f"Trend: '{category_to_track}' per parti över tid"
-        )
-        fig.update_xaxes(title_text="Tidsperiod", showgrid=True)
-        fig.update_yaxes(
-            title_text=f"Genomsnittlig poäng ({category_to_track})",
-            range=[df_plot[category_to_track].min() * 0.9, df_plot[category_to_track].max() * 1.1]
-        )
+            # Applicera tonlexikonet
+            df_ton = apply_ton_lexicon(df_all_data, text_col="text", lexicon_path=LEXICON_PATH)
+            
+            # Lägg till en 'År'-kolumn för gruppering
+            df_ton['År'] = df_ton['protokoll_datum'].dt.to_period('Y') 
 
-        st.plotly_chart(fig, config={"responsive": True})
+            # Aggregera till ETT genomsnitt per ÅR och PARTI
+            df_plot_yearly = df_ton.groupby(['parti', 'År'], observed=False)[category_to_track].mean().reset_index()
+            
+            # Konvertera 'År' från Period till sträng för Plotly
+            df_plot_yearly['År'] = df_plot_yearly['År'].astype(str)
+
+            # 3. Visualisering av Kurvor
+            st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
+            st.info(f"Visar trenden för de senaste {MAX_YEARS} åren med årlig upplösning.")
+            
+            fig = px.line(
+                df_plot_yearly,
+                x="År",
+                y=category_to_track,
+                color="parti",
+                markers=True,
+                title=f"Trend: '{category_to_track}' per parti över tid (Årlig upplösning)"
+            )
+            
+            fig.update_xaxes(title_text="År", showgrid=True)
+            fig.update_yaxes(
+                title_text=f"Genomsnittlig poäng ({category_to_track})",
+                range=[df_plot_yearly[category_to_track].min() * 0.9, df_plot_yearly[category_to_track].max() * 1.1]
+            )
+
+            st.plotly_chart(fig, config={"responsive": True})
+
 
     st.divider()
 
@@ -701,7 +703,14 @@ elif page == "Historik":
     st.subheader("Jämför partiernas vanligaste ord")
     st.markdown("Välj en tidsperiod nedan för att se ordmoln sida vid sida.")
 
-    period_options_reversed = list(time_periods.keys())[::-1]
+    # Definiera endast de korta, relevanta tidsperioderna för ordmoln
+    time_periods_for_cloud = {
+        "Senaste året": (today - timedelta(days=365), today),
+        "Senaste 90 dagarna": (today - timedelta(days=90), today),
+        "Senaste 30 dagarna": (today - timedelta(days=30), today)
+    }
+    
+    period_options_reversed = list(time_periods_for_cloud.keys())[::-1]
     period_for_cloud = st.selectbox(
         "Välj period för ordmolnen:",
         period_options_reversed,
@@ -709,10 +718,10 @@ elif page == "Historik":
         key="all_party_period_select"
     )
 
-    start, end = time_periods[period_for_cloud]
-    df_all_data = fetch_speeches_in_period(start, end)[['text', 'parti']]
+    start, end = time_periods_for_cloud[period_for_cloud]
+    df_all_data_cloud = fetch_speeches_in_period(start, end)[['text', 'parti']]
 
-    if df_all_data.empty:
+    if df_all_data_cloud.empty:
         st.warning(f"Ingen data hittades för ordmoln under '{period_for_cloud}'.")
     else:
         st.markdown(f"**Visar ordmoln baserat på tal under perioden: {period_for_cloud}**")
@@ -720,7 +729,7 @@ elif page == "Historik":
 
         for i, party in enumerate(PARTY_ORDER):
             with cols[i % 4]:
-                df_party = df_all_data[df_all_data['parti'] == party]
+                df_party = df_all_data_cloud[df_all_data_cloud['parti'] == party]
                 
                 if df_party.empty:
                     st.write(f"**{party}** (Ingen data)")
