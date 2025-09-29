@@ -82,11 +82,6 @@ def fetch_speeches_historical(start_date, end_date):
         return pd.DataFrame() 
     return pd.DataFrame(resp.data)
 
-# Retry-decorator för temporära nätverksproblem
-@retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
-def fetch_speeches_historical(start_date, end_date):
-    return fetch_speeches_historical(start_date, end_date)
-
 # -----------------------------
 # Skrivfunktioner
 # -----------------------------
