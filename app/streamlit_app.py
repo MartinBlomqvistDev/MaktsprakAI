@@ -632,15 +632,13 @@ elif page == "Historik":
     import matplotlib.pyplot as plt
     from wordcloud import WordCloud 
     
-    # --- 1. Definiera tidsgräns och ladda data för Linjediagrammet ---
+    # --- 1. Definiera tidsgräns och ladda data ---
     
-    # Vi sätter maxgränsen till 10 år, men du kan ändra denna.
     MAX_YEARS = 10 
     today = date.today()
     START_DATE_LIMIT = today - timedelta(days=365 * MAX_YEARS) 
 
     # Läs lexikon och hämta kategorier
-    # OBS: Antar att LEXICON_PATH och PARTY_ORDER är definierade globalt eller i en modul
     lex_df_temp = pd.read_csv(LEXICON_PATH)
     ton_columns = lex_df_temp['kategori'].unique().tolist()
 
@@ -654,37 +652,29 @@ elif page == "Historik":
     with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}'..."):
         
         # Hämta ALL data inom den maximala tidsperioden
-        # OBS: Antar att fetch_speeches_in_period är definierad
         df_all_data = fetch_speeches_in_period(START_DATE_LIMIT, today)
         
         if df_all_data.empty:
             st.warning(f"Hittade ingen data alls inom den valda tidsgränsen ({START_DATE_LIMIT.year} till {today.year}).")
         else:
-            # 2. Aggregera till KURVOR (per ÅR)
-            
-            # SÄKERSTÄLL DATETIME-KONVERTERING
-            # OBS: Antar att 'protokoll_datum' är en kolumn i df_all_data
-            df_all_data['protokoll_datum'] = pd.to_datetime(df_all_data['protokoll_datum'])
+            # --- NY KONTROLL: VAD FINNS I DATAN? ---
+            # Detta visar det äldsta och nyaste datumet i datamängden.
+            min_date = df_all_data['protokoll_datum'].min().strftime('%Y-%m-%d')
+            max_date = df_all_data['protokoll_datum'].max().strftime('%Y-%m-%d')
+            st.info(f"Datan som hämtades sträcker sig från: {min_date} till {max_date}")
 
-            # Applicera tonlexikonet
-            # OBS: Antar att apply_ton_lexicon är definierad
+            # 1. Extrahera År som heltal (den rena fixen)
             df_ton = apply_ton_lexicon(df_all_data, text_col="text", lexicon_path=LEXICON_PATH)
-            
-            # Lägg till en 'År'-kolumn för gruppering
-            df_ton['År'] = df_ton['protokoll_datum'].dt.to_period('Y') 
+            df_ton['År'] = df_ton['protokoll_datum'].dt.year 
 
-            # Aggregera till ETT genomsnitt per ÅR och PARTI
+            # 2. Aggregera till ETT genomsnitt per ÅR och PARTI
             df_plot_yearly = df_ton.groupby(['parti', 'År'], observed=False)[category_to_track].mean().reset_index()
             
-            # --- FIX: Konvertera År till rent heltal för Plotly ---
-            df_plot_yearly['År'] = df_plot_yearly['År'].astype(str).str.split('-').str[0].astype(int) 
-
             # Hämta unika årtal för att tvinga axelmarkeringar
             unique_years = sorted(df_plot_yearly['År'].unique())
 
-            # 3. Visualisering av Kurvor
+            # 3. Visualisering
             st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
-            st.info(f"Visar trenden för de senaste {MAX_YEARS} åren med årlig upplösning.")
             
             fig = px.line(
                 df_plot_yearly,
@@ -695,18 +685,14 @@ elif page == "Historik":
                 title=f"Trend: '{category_to_track}' per parti över tid (Årlig upplösning)"
             )
             
-            # --- FIX: Tvinga axelmarkeringarna till helår ---
+            # Tvinga axelmarkeringarna till helår
             fig.update_xaxes(
                 title_text="År",
-                tickvals=unique_years,  # Använder endast årtalen med data
-                ticktext=[str(year) for year in unique_years], # Formatera som strängar (t.ex. '2015')
+                tickvals=unique_years, 
+                ticktext=[str(year) for year in unique_years],
                 showgrid=True
             )
-            fig.update_yaxes(
-                title_text=f"Genomsnittlig poäng ({category_to_track})",
-                range=[df_plot_yearly[category_to_track].min() * 0.9, df_plot_yearly[category_to_track].max() * 1.1]
-            )
-
+            
             st.plotly_chart(fig, config={"responsive": True})
 
 
