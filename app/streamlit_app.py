@@ -363,7 +363,7 @@ def welcome_page():
             """
         )
 
-    # === KOMPAKT NYHETSRUTA MED FAST SCROLL OCH H6-RUBRIKER ===
+    # === KOMPAKT NYHETSRUTA MED FAST SCROLL, FULL LÄNGD OCH H6-RUBRIKER ===
     with news_col:
         try:
             all_articles = fetch_party_articles(articles_per_party=2)["articles"]
@@ -373,9 +373,8 @@ def welcome_page():
                 news_html = """
                 <style>
                 .news-box {
-                    max-height: 500px;
-                    min-height: 200px;
-                    overflow-y: scroll;        /* Scrollbar alltid synlig */
+                    height: 100%;              /* Full höjd */
+                    overflow-y: scroll;        /* Scroll alltid synlig */
                     padding: 10px;
                     border: 1px solid #555;
                     border-radius: 10px;
@@ -403,21 +402,30 @@ def welcome_page():
                 # Gruppera artiklar per parti
                 articles_by_party = {}
                 for art in all_articles:
+                    art_date = pd.to_datetime(art.get("date", None), errors="coerce")
+                    if art_date is None or pd.isna(art_date):
+                        continue
+                    art["date_obj"] = art_date
                     articles_by_party.setdefault(art["true_party"], []).append(art)
 
-                # Sortera enligt PARTY_ORDER och använd fullständigt namn
-                for party in PARTY_ORDER:
-                    if party in articles_by_party:
-                        arts = articles_by_party[party]
-                        full_name = PARTY_NAMES[party]
-                        news_html += f'<h6 style="font-weight:200; margin-top:6px; margin-bottom:2px;">{full_name}</h6>'
-                        news_html += '<ul style="padding-left: 15px; margin-top:0; margin-bottom:5px;">'
-                        for art in arts:
-                            news_html += f'<li style="margin-bottom:3px;"><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
-                        news_html += '</ul>'
+                # Sortera partier efter senaste artikel
+                sorted_parties = sorted(
+                    articles_by_party.items(),
+                    key=lambda x: max([a["date_obj"] for a in x[1]]),
+                    reverse=True  # nyaste först
+                )
+
+                for party, arts in sorted_parties:
+                    full_name = PARTY_NAMES.get(party, party)
+                    news_html += f'<h6 style="font-weight:200; margin-top:6px; margin-bottom:2px;">{full_name}</h6>'
+                    news_html += '<ul style="padding-left: 15px; margin-top:0; margin-bottom:5px;">'
+                    for art in arts:
+                        news_html += f'<li style="margin-bottom:3px;"><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
+                    news_html += '</ul>'
 
                 news_html += "</div>"
                 st.markdown(news_html, unsafe_allow_html=True)
+
         except Exception as e:
             st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
 
