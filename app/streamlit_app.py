@@ -382,17 +382,30 @@ with st.sidebar:
         default_index=0,
     )
     st.divider()
-    st.header("Filter")
 
-def select_quick_date_range():
-    options = {"Senaste 7 dagarna": 7, "Senaste 30 dagarna": 30, "Senaste 90 dagarna": 90, "Detta år": "this_year", "Förra året": "last_year"}
-    selected_option = st.sidebar.selectbox("Välj tidsperiod", list(options.keys()))
-    today = date.today()
-    days = options[selected_option]
-    if isinstance(days, int): start_date = today - timedelta(days=days); end_date = today
-    elif days == "this_year": start_date = date(today.year, 1, 1); end_date = today
-    else: start_date = date(today.year - 1, 1, 1); end_date = date(today.year - 1, 12, 31)
-    return start_date, end_date
+with st.sidebar:
+    st.title("MaktspråkAI")
+    page = option_menu(
+        menu_title=None, 
+        options=PAGE_OPTIONS,
+        icons=["house-fill", "search", "bar-chart-line-fill", "check2-square", "graph-up"],
+        menu_icon="cast", 
+        default_index=0,
+    )
+    st.divider()
+
+    # --- Inrikesnyheter i sidebar ---
+    st.subheader("Senaste inrikesnyheter")
+    try:
+        news_items = fetch_news()
+        if news_items:
+            for item in news_items:
+                st.markdown(f"- [{item['title']}]({item['link']})")
+        else:
+            st.info("Inga nyheter kunde hämtas just nu.")
+    except Exception:
+        st.error("Fel vid hämtning av nyheter.")
+
 
 # =====================
 # Huvudlogik för sidvisning
