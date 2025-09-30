@@ -380,18 +380,7 @@ with st.sidebar:
         icons=["house-fill", "search", "bar-chart-line-fill", "check2-square", "graph-up"],
         menu_icon="cast", 
         default_index=0,
-    )
-    st.divider()
-
-with st.sidebar:
-    st.title("MaktspråkAI")
-    page = option_menu(
-        menu_title=None, 
-        options=PAGE_OPTIONS,
-        icons=["house-fill", "search", "bar-chart-line-fill", "check2-square", "graph-up"],
-        menu_icon="cast", 
-        default_index=0,
-        key="sidebar_main_menu"  # ✅ viktig för unik identifiering
+        key="sidebar_main_menu"  # viktig för unik identifiering
     )
     st.divider()
 
