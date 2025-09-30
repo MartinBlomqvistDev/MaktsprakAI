@@ -672,10 +672,13 @@ elif page == "Historik":
         df_plot_yearly['År'] = df_plot_yearly['År'].astype(str).str.split('-').str[0].astype(int) 
         unique_years = sorted(df_plot_yearly['År'].unique())
 
+        # Konvertera till procent av partiets tal
+        df_plot_yearly[category_to_track] = df_plot_yearly[category_to_track] * 100
+
         # 4. Visualisering
         st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
         st.markdown(f"Visar trenden för de senaste {MAX_YEARS} åren med årlig upplösning.")
-        
+
         fig = px.line(
             df_plot_yearly,
             x="År",
@@ -684,7 +687,7 @@ elif page == "Historik":
             markers=True,
             title=f"Trend: '{category_to_track}' per parti över tid (Årlig upplösning)"
         )
-        
+
         fig.update_xaxes(
             title_text="År", 
             tickvals=unique_years, 
@@ -692,10 +695,12 @@ elif page == "Historik":
             showgrid=True
         )
         fig.update_yaxes(
-            title_text=f"Genomsnittlig poäng ({category_to_track})", 
+            title_text=f"% av partiets tal med kategori '{category_to_track}'", 
             range=[df_plot_yearly[category_to_track].min() * 0.9,
                    df_plot_yearly[category_to_track].max() * 1.1]
         )
+        fig.update_traces(hovertemplate='%{y:.1f}% av partiets tal')
+
         st.plotly_chart(fig, config={"responsive": True})
 
     st.divider()
