@@ -65,6 +65,7 @@ def fetch_random_speeches(limit: int = 5):
 
 @st.cache_data(ttl=1800)
 def fetch_speeches_historical():
+    """Hämtar alla historiska anföranden i kronologisk ordning."""
     dfs = []
     batch_size = 1000
     offset = 0
@@ -73,6 +74,7 @@ def fetch_speeches_historical():
         resp = (
             supabase.table("speeches")
             .select("text, parti, protokoll_datum")
+            .order("protokoll_datum", ascending=True)   # Viktigt: sortera vid hämtning
             .range(offset, offset + batch_size - 1)
             .execute()
         )
@@ -87,8 +89,17 @@ def fetch_speeches_historical():
 
     if dfs:
         df = pd.concat(dfs, ignore_index=True)
+
+        # Säkerställ rätt datumformat
         df['protokoll_datum'] = pd.to_datetime(df['protokoll_datum'], errors='coerce')
-        return df.sort_values("protokoll_datum")
+
+        # Ta bort rader utan giltigt datum
+        df = df.dropna(subset=["protokoll_datum"])
+
+        # Sortera en extra gång i Pandas för att garantera korrekt ordning
+        df = df.sort_values("protokoll_datum").reset_index(drop=True)
+
+        return df
     
     return pd.DataFrame(columns=["text", "parti", "protokoll_datum"])
 
