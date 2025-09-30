@@ -511,10 +511,22 @@ elif page == "Språkbruk & Retorik":
 
         # --- Lexikonbaserad tonanalys ---
         df_ton = apply_ton_lexicon(df, text_col="text", lexicon_path=LEXICON_PATH)
-        ton_columns = [col for col in df_ton.columns if col not in ['text','parti','protokoll_datum']]
 
-        retorik_profil = df_ton.groupby('parti', observed=False)[ton_columns].mean().reindex(PARTY_ORDER).fillna(0)
-        retorik_sammansattning = retorik_profil.div(retorik_profil.sum(axis=1).replace(0,1), axis=0) * 100
+        # --- Robust hantering av numeriska kolumner ---
+        numeric_cols = df_ton.select_dtypes(include='number').columns.tolist()
+        for col in numeric_cols:
+            df_ton[col] = pd.to_numeric(df_ton[col], errors='coerce')
+
+        # --- Skapa retorikprofil ---
+        retorik_profil = df_ton.groupby('parti', observed=False)[numeric_cols] \
+                               .mean() \
+                               .reindex(PARTY_ORDER) \
+                               .fillna(0)
+
+        # --- Normalisera till procent ---
+        retorik_sammansattning = retorik_profil.div(
+            retorik_profil.sum(axis=1).replace(0, 1), axis=0
+        ) * 100
 
         # --- Tabs ---
         tab1, tab2 = st.tabs(["Retoriskt fingeravtryck", "Rankning per kategori"])
@@ -540,7 +552,7 @@ elif page == "Språkbruk & Retorik":
 
             # Markera partier utan data
             for parti in PARTY_ORDER:
-                if not df_plot[df_plot['parti']==parti]['Har_data'].any():
+                if not df_plot[df_plot['parti'] == parti]['Har_data'].any():
                     fig_stacked_bar.add_scatter(
                         x=[parti],
                         y=[0],
@@ -550,7 +562,7 @@ elif page == "Språkbruk & Retorik":
                         name=f"{parti} (ingen data)"
                     )
 
-            fig_stacked_bar.update_layout(xaxis={'categoryorder':'array', 'categoryarray': PARTY_ORDER})
+            fig_stacked_bar.update_layout(xaxis={'categoryorder': 'array', 'categoryarray': PARTY_ORDER})
             st.plotly_chart(fig_stacked_bar, config={"responsive": True})
 
         # --- Rankning per kategori ---
@@ -571,7 +583,7 @@ elif page == "Språkbruk & Retorik":
                     text_auto='.1f',
                     title=f"Relativ rankning - {category_to_rank}"
                 )
-                fig_bar.update_layout(yaxis={'categoryorder':'array', 'categoryarray': ranked_df.index.tolist()})
+                fig_bar.update_layout(yaxis={'categoryorder': 'array', 'categoryarray': ranked_df.index.tolist()})
                 st.plotly_chart(fig_bar, config={"responsive": True})
 
         # --- WordClouds ---
@@ -580,13 +592,13 @@ elif page == "Språkbruk & Retorik":
         cols = st.columns(4)
         for i, party in enumerate(PARTY_ORDER):
             with cols[i % 4]:
-                raw_text_blob = " ".join(df[df["parti"]==party]["text"].dropna().tolist())
+                raw_text_blob = " ".join(df[df["parti"] == party]["text"].dropna().tolist())
                 cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
                 if cleaned_text_for_cloud:
                     try:
                         wc = WordCloud(width=400, height=300, background_color="white", collocations=False).generate(cleaned_text_for_cloud)
                         st.write(f"**{party}**")
-                        fig_wc, ax = plt.subplots(figsize=(4,3))
+                        fig_wc, ax = plt.subplots(figsize=(4, 3))
                         ax.imshow(wc, interpolation='bilinear')
                         ax.axis("off")
                         st.pyplot(fig_wc)
@@ -595,7 +607,6 @@ elif page == "Språkbruk & Retorik":
                         st.error(f"Kunde inte generera moln för {party}.")
                 else:
                     st.write(f"**{party}** (För lite text)")
-
 
 elif page == "Evaluering":
     st.header("Automatisk Testbänk: Prediktion på partiernas egna texter")
