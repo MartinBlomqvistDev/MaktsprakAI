@@ -402,37 +402,61 @@ if page == "Om projektet":
 
 elif page == "Partiprediktion":
     st.header("Partiprediktion")
+    
+    # --- Introduktion ---
     st.info("""
-        **Testa AI-modellen live!** Klistra in valfri text (t.ex. ett citat, pressmeddelande eller uttalande)
-        från ett riksdagsparti. Eller experimentera själv med påhittade citat. Modellen analyserar språk, ton och retorik för att förutsäga vilket parti
-        som har skrivit texten.
+    **Testa AI-modellen live!** Klistra in valfri text (t.ex. ett citat, pressmeddelande eller uttalande)
+    från ett riksdagsparti. Eller experimentera själv med påhittade citat. Modellen analyserar språk, ton och retorik för att förutsäga vilket parti
+    som har skrivit texten.
     """)
+
+    # --- Textarea och knapp ---
     user_text = st.text_area("Skriv eller klistra in ett citat här:", height=150, label_visibility="collapsed")
+    prediktion_placeholder = st.empty()  # Vi fyller den med resultatet senare
+
     if st.button("Prediktera parti"):
         if user_text.strip():
             with st.spinner("Beräknar…"):
                 cleaned_text = clean_text(user_text)
                 party_probs = predict_party(model, tokenizer, [cleaned_text])
 
-                # --- Säker fallback om modellen returnerar tomt eller ogiltigt ---
                 if not party_probs or not isinstance(party_probs[0], dict):
                     st.warning("Modellen returnerade inget resultat. Kontrollera input eller försök igen.")
-                    party_probs = [{p: 0 for p in PARTY_ORDER}]  # fallback med 0 för alla partier
+                    party_probs = [{p: 0 for p in PARTY_ORDER}]
 
                 party_prob_dict = party_probs[0]
-
-                # Hitta parti med högst sannolikhet
                 party, prob = max(party_prob_dict.items(), key=lambda x: x[1])
 
-            st.success(f"**Predikterat parti:** {party} ({prob*100:.1f}% säkerhet)")
+            # --- Visa resultatet
+            with prediktion_placeholder.container():
+                st.success(f"**Predikterat parti:** {party} ({prob*100:.1f}% säkerhet)")
+                fig = px.bar(
+                    x=PARTY_ORDER,
+                    y=[party_prob_dict.get(p, 0) for p in PARTY_ORDER],
+                    labels={"x": "Parti", "y": "Sannolikhet"},
+                    text=[f"{party_prob_dict.get(p, 0)*100:.1f}%" for p in PARTY_ORDER]
+                )
+                st.plotly_chart(fig, config={"responsive": True})
 
-            fig = px.bar(
-                x=PARTY_ORDER,
-                y=[party_prob_dict.get(p, 0) for p in PARTY_ORDER],
-                labels={"x": "Parti", "y": "Sannolikhet"},
-                text=[f"{party_prob_dict.get(p, 0)*100:.1f}%" for p in PARTY_ORDER]
-            )
-            st.plotly_chart(fig, config={"responsive": True})
+    # --- Diskret tips/guide, alltid under knappen ---
+    st.info("""
+    **Tips & exempel för att testa modellen**
+    
+    Här är några autentiska debattcitat du kan prova modellen på:
+    
+    - "Vi behöver stärka skolan och säkerställa att alla barn får samma möjligheter."  
+      Källa: [Aftonbladet Debatt](https://www.aftonbladet.se/debatt)
+    - "Miljön är vår tids största utmaning – vi måste agera nu!"  
+      Källa: [DN Debatt](https://www.dn.se/debatt/)
+    - "Sänk skatterna för att främja företagande och innovation."  
+      Källa: [Regeringen Debattartiklar](https://www.regeringen.se/debattartiklar/)
+    
+    Tips:  
+    - Testa påhittade citat eller uttalanden från offentliga personer.  
+    - Använd citat från nyhetsartiklar eller offentliga dokument.  
+    - Utforska hur modellen tolkar olika retoriska stilar och ämnen.
+    """)
+
 
 
 elif page == "Språkbruk & Retorik":
