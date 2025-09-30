@@ -438,24 +438,27 @@ elif page == "Partiprediktion":
                 )
                 st.plotly_chart(fig, config={"responsive": True})
 
-    # --- Diskret tips/guide, alltid under knappen ---
-    st.info("""
-    **Tips & exempel för att testa modellen**
-    
-    Här är några autentiska debattcitat du kan prova modellen på:
-    
-    - "Vi behöver stärka skolan och säkerställa att alla barn får samma möjligheter."  
-      Källa: [Aftonbladet Debatt](https://www.aftonbladet.se/debatt)
-    - "Miljön är vår tids största utmaning – vi måste agera nu!"  
-      Källa: [DN Debatt](https://www.dn.se/debatt/)
-    - "Sänk skatterna för att främja företagande och innovation."  
-      Källa: [Regeringen Debattartiklar](https://www.regeringen.se/debattartiklar/)
-    
-    Tips:  
-    - Testa påhittade citat eller uttalanden från offentliga personer.  
-    - Använd citat från nyhetsartiklar eller offentliga dokument.  
-    - Utforska hur modellen tolkar olika retoriska stilar och ämnen.
-    """)
+    # --- Diskret tips/guide, centrerad och smal ---
+    cols = st.columns([1, 3, 1])  # 1:3:1 → mittkolumnen blir smalare
+    with cols[1]:
+        st.info("""
+        🧠 **Tips & exempel för att testa modellen**
+        
+        Här är några autentiska debattcitat du kan prova modellen på:
+        
+        - "Vi behöver stärka skolan och säkerställa att alla barn får samma möjligheter."  
+        Källa: [Aftonbladet Debatt](https://www.aftonbladet.se/debatt)
+        - "Miljön är vår tids största utmaning – vi måste agera nu!"  
+        Källa: [DN Debatt](https://www.dn.se/debatt/)
+        - "Sänk skatterna för att främja företagande och innovation."  
+        Källa: [Regeringen Debattartiklar](https://www.regeringen.se/debattartiklar/)
+        
+        💡 Tips:  
+        - Testa påhittade citat eller uttalanden från offentliga personer.  
+        - Använd citat från nyhetsartiklar eller offentliga dokument.  
+        - Utforska hur modellen tolkar olika retoriska stilar och ämnen.
+        """)
+
 
 
 
