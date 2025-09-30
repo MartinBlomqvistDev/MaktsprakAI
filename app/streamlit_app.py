@@ -352,21 +352,31 @@ def welcome_page():
             """
         )
 
-    # === NYHETSRUTAN ===
+    # === NYHETSRUTAN MED PARTINAMN SOM UNDERRUBRIK ===
     with news_col:
         try:
-            news_items = fetch_news()
-            if not news_items:
-                st.warning("Kunde inte hämta nyhetsflödet.")
+            all_articles = fetch_party_articles(articles_per_party=2)["articles"]
+            if not all_articles:
+                st.warning("Kunde inte hämta partinyheter.")
             else:
-                news_html = '<div class="news-box"><h3>Senaste inrikesnyheterna</h3><ul>'
-                for item in news_items:
-                    news_html += f'<li><a href="{item["link"]}" target="_blank">{item["title"]}</a></li>'
-                news_html += '</ul><div style="text-align: right; font-size: 0.8em; margin-top: 10px;">Från <a href="https://www.svt.se/nyheter/inrikes" target="_blank">SVT Nyheter</a></div></div>'
+                news_html = '<div class="news-box"><h3>Senaste partinyheterna</h3>'
                 
+                # Gruppera artiklar per parti
+                articles_by_party = {}
+                for art in all_articles:
+                    articles_by_party.setdefault(art["true_party"], []).append(art)
+                
+                for party, arts in articles_by_party.items():
+                    news_html += f'<h4>{party}</h4><ul>'
+                    for art in arts:
+                        news_html += f'<li><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
+                    news_html += '</ul>'
+                
+                news_html += '</div>'
                 st.markdown(news_html, unsafe_allow_html=True)
         except Exception as e:
-            st.error(f"Ett fel uppstod vid hämtning av nyheter.")
+            st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
+
 
 
 # =====================
