@@ -107,6 +107,10 @@ def get_full_article_text(url: str) -> str:
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def fetch_party_articles(articles_per_party: int = 1):
+    """
+    Hämtar senaste artiklar för varje parti via RSS och special-skrapning för S om RSS saknas.
+    Artiklar som är korta eller flaggade som 'oönskade' filtreras bort.
+    """
     party_feeds = {
         "S": "https://via.tt.se/rss/releases/latest?publisherId=142377",
         "M": "https://moderaterna.se/feed/",
@@ -117,42 +121,59 @@ def fetch_party_articles(articles_per_party: int = 1):
         "L": "https://www.liberalerna.se/feed/",
         "MP": "https://via.tt.se/rss/releases/latest?publisherId=3237031"
     }
-    
+
     all_valid_articles = []
     debug_log = []
-    
+
     for party, url in party_feeds.items():
         found_for_party_count = 0
         entries = []
-        try:
-            feed = feedparser.parse(url)
-            entries = feed.entries
-            if not entries and party == "S":
-                debug_log.append(f"INFO [S]: RSS tomt. Kör special-skrapa för S nyhetssida.")
-                try:
-                    s_url = "https://www.socialdemokraterna.se/nyheter/nyheter"
-                    response = requests.get(s_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
-                    s_soup = BeautifulSoup(response.content, "html.parser")
-                    article_cards = s_soup.find_all('a', class_='c-card')
-                    for card in article_cards[:10]:
-                        title = card.find('h3', class_='c-card__title')
-                        if title and card.has_attr('href'):
-                            full_link = card['href']
-                            if full_link.startswith('/'):
-                                full_link = "https://www.socialdemokraterna.se" + full_link
-                            entries.append({"title": title.get_text(strip=True), "link": full_link})
-                except Exception as e:
-                    debug_log.append(f"CRITICAL [S]: Special-skrapan misslyckades: {e}")
+        max_attempts = 2
+        attempt = 0
 
-            debug_log.append(f"INFO [{party}]: Hittade {len(entries)} inlägg att bearbeta.")
-            
-            for i, entry in enumerate(entries):
-                if found_for_party_count >= articles_per_party:
-                    break
-                title = entry.get('title', "Titel saknas")
-                link = entry.get('link', None)
-                if not link: continue
-                debug_log.append(f"  -> Försöker hämta artikel {i+1}: '{title}'")
+        while attempt < max_attempts:
+            try:
+                feed = feedparser.parse(url)
+                entries = feed.entries
+                break  # Lyckades
+            except Exception as e:
+                attempt += 1
+                debug_log.append(f"WARNING [{party}]: RSS parse failed attempt {attempt}: {e}")
+                if attempt == max_attempts:
+                    debug_log.append(f"CRITICAL [{party}]: RSS parse misslyckades helt, hoppar över.")
+
+        # Specialskrapa för S om RSS är tom
+        if not entries and party == "S":
+            debug_log.append(f"INFO [S]: RSS tomt. Kör special-skrapa för S nyhetssida.")
+            try:
+                s_url = "https://www.socialdemokraterna.se/nyheter/nyheter"
+                response = requests.get(s_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+                s_soup = BeautifulSoup(response.content, "html.parser")
+                article_cards = s_soup.find_all('a', class_='c-card')
+                for card in article_cards[:10]:
+                    title_tag = card.find('h3', class_='c-card__title')
+                    if title_tag and card.has_attr('href'):
+                        full_link = card['href']
+                        if full_link.startswith('/'):
+                            full_link = "https://www.socialdemokraterna.se" + full_link
+                        entries.append({"title": title_tag.get_text(strip=True), "link": full_link})
+            except Exception as e:
+                debug_log.append(f"CRITICAL [S]: Special-skrapan misslyckades: {e}")
+
+        debug_log.append(f"INFO [{party}]: Hittade {len(entries)} inlägg att bearbeta.")
+
+        # Processa artiklar
+        for i, entry in enumerate(entries):
+            if found_for_party_count >= articles_per_party:
+                break
+            title = entry.get('title', "Titel saknas")
+            link = entry.get('link', None)
+            if not link:
+                debug_log.append(f"  -> Skippade artikel {i+1}: Ingen länk")
+                continue
+
+            debug_log.append(f"  -> Försöker hämta artikel {i+1}: '{title}'")
+            try:
                 full_content = get_full_article_text(link)
                 if not full_content or len(full_content) < 250:
                     debug_log.append(f"    - MISSLYCKADES: Skrapan hittade för lite text (<250 tecken).")
@@ -160,14 +181,22 @@ def fetch_party_articles(articles_per_party: int = 1):
                 if is_unwanted_content(title, full_content):
                     debug_log.append(f"    - MISSLYCKADES: Innehållet flaggades som 'oönskat'.")
                     continue
+
                 debug_log.append(f"    - OK: Artikeln godkändes.")
                 found_for_party_count += 1
-                all_valid_articles.append({ "title": title, "link": link, "content": full_content, "true_party": party })
-        except Exception as e:
-            debug_log.append(f"CRITICAL [{party}]: Ett allvarligt fel inträffade: {e}")
-            
+                all_valid_articles.append({
+                    "title": title,
+                    "link": link,
+                    "content": full_content,
+                    "true_party": party
+                })
+
+            except Exception as e:
+                debug_log.append(f"    - CRITICAL: Misslyckades hämta artikel '{title}': {e}")
+
     random.shuffle(all_valid_articles)
     return {"articles": all_valid_articles, "log": debug_log}
+
 
 def is_unwanted_content(title: str, content: str) -> bool:
     title_lower = title.lower()

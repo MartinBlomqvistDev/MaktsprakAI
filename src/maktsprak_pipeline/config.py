@@ -1,6 +1,6 @@
 # src/maktsprak_pipeline/config.py
 # Konfigurationsvariabler för MaktsprakAI
-# UPPDATERAD FÖR POSTGRESQL/SUPABASE DEPLOYMENT
+# UPPDATERAD FÖR POSTGRESQL/SUPABASE + PARQUET
 
 from dotenv import load_dotenv
 import os
@@ -18,8 +18,18 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_PORT = os.getenv("DB_PORT", 5432) 
 
+# Supabase REST API (alternativ om du inte vill köra direkt mot Postgres)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+# =========================================================
+# Extern data / Parquet
+# =========================================================
+PARQUET_URL = os.getenv("PARQUET_URL")  # Google Drive eller annan extern länk
+
+# =========================================================
 # Lokala filer
+# =========================================================
 RAW_DATA_PATH = "data/raw/"                # Rådata (tweets, debattext)
 PROCESSED_DATA_PATH = "data/processed/"    # Preprocessad text
 TON_LEXICON_PATH = "data/processed/ton_lexicon_with_weights.csv"
@@ -42,7 +52,6 @@ X_API_KEY = os.getenv("TWITTER_BEARER_TOKEN")
 # =========================================================
 # AI-Modell / Hugging Face
 # =========================================================
-# Sökväg till modellen som ska laddas (används i model.py)
 MODEL_NAME_OR_PATH = os.getenv("MODEL_NAME_OR_PATH", "MartinBlomqvist/maktsprak_bert")
 
 # =========================================================
