@@ -372,7 +372,7 @@ def welcome_page():
             else:
                 news_html = """
                 <div class="news-box" style="
-                    max-height: 300px;       /* Sätter höjd på rutan */
+                    max-height: 500px;       /* Sätter höjd på rutan */
                     overflow-y: auto;        /* Scroll om innehållet blir för stort */
                     padding: 10px;           /* Kompakt padding */
                 ">
