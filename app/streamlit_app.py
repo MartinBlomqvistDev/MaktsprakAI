@@ -403,14 +403,12 @@ if page == "Om projektet":
 elif page == "Partiprediktion":
     st.header("Partiprediktion")
     
-    # --- Introduktion, centrerad och smal ---
-    intro_cols = st.columns([1, 3, 1])  # 1:3:1 → mittkolumnen smalare
-    with intro_cols[1]:
-        st.info("""
-        **Testa AI-modellen live!** Klistra in valfri text (t.ex. ett citat, pressmeddelande eller uttalande)
-        från ett riksdagsparti. Eller experimentera själv med påhittade citat. Modellen analyserar språk, ton och retorik
-        för att förutsäga vilket parti som har skrivit texten.
-        """)
+    # --- Introduktion ---
+    st.info("""
+    **Testa AI-modellen live!** Klistra in valfri text (t.ex. ett citat, pressmeddelande eller uttalande)
+    från ett riksdagsparti. Eller experimentera själv med påhittade citat. Modellen analyserar språk, ton och retorik för att förutsäga vilket parti
+    som har skrivit texten.
+    """)
 
     # --- Textarea och knapp ---
     user_text = st.text_area("Skriv eller klistra in ett citat här:", height=150, label_visibility="collapsed")
@@ -429,7 +427,7 @@ elif page == "Partiprediktion":
                 party_prob_dict = party_probs[0]
                 party, prob = max(party_prob_dict.items(), key=lambda x: x[1])
 
-            # --- Visa resultatet ---
+            # --- Visa resultatet
             with prediktion_placeholder.container():
                 st.success(f"**Predikterat parti:** {party} ({prob*100:.1f}% säkerhet)")
                 fig = px.bar(
@@ -449,17 +447,19 @@ elif page == "Partiprediktion":
         Här är några autentiska debattcitat du kan prova modellen på:
         
         - "Vi behöver stärka skolan och säkerställa att alla barn får samma möjligheter."  
-          Källa: [Aftonbladet Debatt](https://www.aftonbladet.se/debatt)
+        Källa: [Aftonbladet Debatt](https://www.aftonbladet.se/debatt)
         - "Miljön är vår tids största utmaning – vi måste agera nu!"  
-          Källa: [DN Debatt](https://www.dn.se/debatt/)
+        Källa: [DN Debatt](https://www.dn.se/debatt/)
         - "Sänk skatterna för att främja företagande och innovation."  
-          Källa: [Regeringen Debattartiklar](https://www.regeringen.se/debattartiklar/)
+        Källa: [Regeringen Debattartiklar](https://www.regeringen.se/debattartiklar/)
         
         💡 Tips:  
         - Testa påhittade citat eller uttalanden från offentliga personer.  
         - Använd citat från nyhetsartiklar eller offentliga dokument.  
         - Utforska hur modellen tolkar olika retoriska stilar och ämnen.
         """)
+
+
 
 
 elif page == "Språkbruk & Retorik":
