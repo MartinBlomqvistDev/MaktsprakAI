@@ -363,7 +363,7 @@ def welcome_page():
             """
         )
 
-    # === KOMPAKT NYHETSRUTA MED FAST SCROLL OCH H6-RUBRIKER ===
+    # === KOMPAKT NYHETSRUTA MED SCROLL OCH H6-RUBRIKER + SCROLLINDIKATOR ===
     with news_col:
         try:
             all_articles = fetch_party_articles(articles_per_party=2)["articles"]
@@ -372,10 +372,10 @@ def welcome_page():
             else:
                 news_html = """
                 <div class="news-box" style="
-                    max-height: 500px;       /* Maxhöjd */
-                    min-height: 200px;       /* Minhöjd för att scroll ska synas även om få artiklar */
-                    overflow-y: scroll;      /* Scroll visas alltid */
-                    padding: 10px;
+                    max-height: 500px;           /* Fast höjd */
+                    overflow-y: auto;            /* Scrollbar om innehåll överstiger höjd */
+                    padding: 10px;               /* Kompakt padding */
+                    position: relative;           /* För scrollindikator */
                 ">
                 <h4 style="margin-bottom:10px;">Senaste partinyheterna</h4>
                 """
@@ -390,18 +390,27 @@ def welcome_page():
                     if party in articles_by_party:
                         arts = articles_by_party[party]
                         full_name = PARTY_NAMES[party]
-                        news_html += f'<h6 style="font-weight:200; margin-top:6px; margin-bottom:2px;">{full_name}</h6><ul style="padding-left: 15px;">'
+                        news_html += f'<h6 style="font-weight:200; margin-top:6px; margin-bottom:2px;">{full_name}</h6>'
+                        news_html += '<ul style="padding-left: 15px; margin-top:0; margin-bottom:5px;">'
                         for art in arts:
                             news_html += f'<li style="margin-bottom:3px;"><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
                         news_html += '</ul>'
 
-                news_html += "</div>"
+                # Scrollindikator: liten gradient längst ner
+                news_html += """
+                <div style="
+                    position: sticky;
+                    bottom: 0;
+                    height: 20px;
+                    background: linear-gradient(to top, rgba(255,255,255,0.8), rgba(255,255,255,0));
+                    pointer-events: none;
+                "></div>
+                </div>
+                """
+
                 st.markdown(news_html, unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
-
-
-
 
 # =====================
 # Sidebar och Navigation
