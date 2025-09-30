@@ -363,34 +363,42 @@ def welcome_page():
             """
         )
 
-    # === NYHETSRUTAN MED ÄNNU MINDRE RUBRIKER (H5) OCH HELA PARTINAMN ===
+    # === KOMPAKT NYHETSRUTA MED SCROLL OCH H6-RUBRIKER ===
     with news_col:
         try:
             all_articles = fetch_party_articles(articles_per_party=2)["articles"]
             if not all_articles:
                 st.warning("Kunde inte hämta partinyheter.")
             else:
-                news_html = '<div class="news-box"><h3>Senaste partinyheterna</h3>'
-                
+                news_html = """
+                <div class="news-box" style="
+                    max-height: 300px;       /* Sätter höjd på rutan */
+                    overflow-y: auto;        /* Scroll om innehållet blir för stort */
+                    padding: 10px;           /* Kompakt padding */
+                ">
+                <h4 style="margin-bottom:10px;">Senaste partinyheterna</h4>
+                """
+
                 # Gruppera artiklar per parti
                 articles_by_party = {}
                 for art in all_articles:
                     articles_by_party.setdefault(art["true_party"], []).append(art)
-                
+
                 # Sortera enligt PARTY_ORDER och använd fullständigt namn
                 for party in PARTY_ORDER:
                     if party in articles_by_party:
                         arts = articles_by_party[party]
-                        full_name = PARTY_NAMES[party]  # mappning finns redan
-                        news_html += f'<h6 style="font-weight:200; margin-top:8px;">{full_name}</h6><ul>'
+                        full_name = PARTY_NAMES[party]
+                        news_html += f'<h6 style="font-weight:200; margin-top:6px; margin-bottom:2px;">{full_name}</h6><ul style="padding-left: 15px;">'
                         for art in arts:
-                            news_html += f'<li><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
+                            news_html += f'<li style="margin-bottom:3px;"><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
                         news_html += '</ul>'
-                
-                news_html += '</div>'
+
+                news_html += "</div>"
                 st.markdown(news_html, unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
+
 
 
 # =====================
