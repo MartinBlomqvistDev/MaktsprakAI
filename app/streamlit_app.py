@@ -384,17 +384,60 @@ with st.sidebar:
     )
     st.divider()
 
+    # --- CSS för nyhetsruta i sidebar ---
+    st.markdown("""
+        <style>
+        .news-box-sidebar {
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: transparent;
+            margin-bottom: 15px;
+        }
+
+        .news-box-sidebar h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .news-box-sidebar ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+
+        .news-box-sidebar li {
+            margin-bottom: 6px;
+            font-size: 0.85em;
+        }
+
+        .news-box-sidebar a {
+            text-decoration: none;
+            color: #1E90FF;
+        }
+
+        .news-box-sidebar a:hover {
+            text-decoration: underline;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     # --- Inrikesnyheter i sidebar ---
-    st.subheader("Senaste inrikesnyheter")
+    st.subheader("Senaste inrikesnyheterna")
     try:
         news_items = fetch_news()
         if news_items:
+            news_html = '<div class="news-box-sidebar"><ul>'
             for item in news_items:
-                st.markdown(f"- [{item['title']}]({item['link']})")
+                news_html += f'<li><a href="{item["link"]}" target="_blank">{item["title"]}</a></li>'
+            news_html += '</ul><div style="text-align: right; font-size: 0.75em; margin-top: 5px;">Från <a href="https://www.svt.se/nyheter/inrikes" target="_blank">SVT Nyheter</a></div></div>'
+            st.markdown(news_html, unsafe_allow_html=True)
         else:
             st.info("Inga nyheter kunde hämtas just nu.")
     except Exception:
         st.error("Fel vid hämtning av nyheter.")
+
 
 # =====================
 # Huvudlogik för sidvisning
