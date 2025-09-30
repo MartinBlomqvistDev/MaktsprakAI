@@ -380,11 +380,11 @@ with st.sidebar:
         icons=["house-fill", "search", "bar-chart-line-fill", "check2-square", "graph-up"],
         menu_icon="cast", 
         default_index=0,
-        key="sidebar_main_menu"  # viktig för unik identifiering
+        key="sidebar_main_menu"
     )
     st.divider()
 
-    # --- CSS för nyhetsruta i sidebar ---
+    # --- CSS för nyhetsruta i sidebar med modern scrollbar ---
     st.markdown("""
         <style>
         .news-box-sidebar {
@@ -392,13 +392,32 @@ with st.sidebar:
             border-radius: 8px;
             padding: 10px;
             background-color: transparent;
+            max-height: 250px;
+            overflow-y: auto;
             margin-bottom: 15px;
+        }
+
+        .news-box-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .news-box-sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .news-box-sidebar::-webkit-scrollbar-thumb {
+            background-color: #888;
+            border-radius: 3px;
+        }
+
+        .news-box-sidebar::-webkit-scrollbar-thumb:hover {
+            background-color: #555;
         }
 
         .news-box-sidebar h3 {
             margin-top: 0;
             margin-bottom: 8px;
-            font-size: 1em;
+            font-size: 0.95em;
         }
 
         .news-box-sidebar ul {
@@ -424,19 +443,22 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     # --- Inrikesnyheter i sidebar ---
-    st.subheader("Senaste inrikesnyheterna")
     try:
         news_items = fetch_news()
         if news_items:
-            news_html = '<div class="news-box-sidebar"><ul>'
+            news_html = '<div class="news-box-sidebar">'
+            news_html += '<h3>Senaste inrikesnyheterna</h3><ul>'
             for item in news_items:
                 news_html += f'<li><a href="{item["link"]}" target="_blank">{item["title"]}</a></li>'
-            news_html += '</ul><div style="text-align: right; font-size: 0.75em; margin-top: 5px;">Från <a href="https://www.svt.se/nyheter/inrikes" target="_blank">SVT Nyheter</a></div></div>'
+            news_html += '</ul>'
+            news_html += '<div style="text-align: right; font-size: 0.75em; margin-top: 5px;">Från <a href="https://www.svt.se/nyheter/inrikes" target="_blank">SVT Nyheter</a></div>'
+            news_html += '</div>'
             st.markdown(news_html, unsafe_allow_html=True)
         else:
             st.info("Inga nyheter kunde hämtas just nu.")
     except Exception:
         st.error("Fel vid hämtning av nyheter.")
+
 
 
 # =====================
