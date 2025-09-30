@@ -363,7 +363,7 @@ def welcome_page():
             """
         )
 
-    # === KOMPAKT NYHETSRUTA MED SCROLL OCH H6-RUBRIKER ===
+    # === KOMPAKT NYHETSRUTA MED FAST SCROLL OCH H6-RUBRIKER ===
     with news_col:
         try:
             all_articles = fetch_party_articles(articles_per_party=2)["articles"]
@@ -372,9 +372,10 @@ def welcome_page():
             else:
                 news_html = """
                 <div class="news-box" style="
-                    max-height: 500px;       /* Sätter höjd på rutan */
-                    overflow-y: auto;        /* Scroll om innehållet blir för stort */
-                    padding: 10px;           /* Kompakt padding */
+                    max-height: 500px;       /* Maxhöjd */
+                    min-height: 200px;       /* Minhöjd för att scroll ska synas även om få artiklar */
+                    overflow-y: scroll;      /* Scroll visas alltid */
+                    padding: 10px;
                 ">
                 <h4 style="margin-bottom:10px;">Senaste partinyheterna</h4>
                 """
@@ -398,6 +399,7 @@ def welcome_page():
                 st.markdown(news_html, unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
+
 
 
 
