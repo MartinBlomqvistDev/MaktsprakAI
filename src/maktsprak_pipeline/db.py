@@ -64,25 +64,31 @@ def fetch_random_speeches(limit: int = 5):
     return data[:limit]
 
 @st.cache_data(ttl=1800)
-def fetch_speeches_historical():
-    """Hämtar alla historiska anföranden i kronologisk ordning."""
+def fetch_speeches_historical(start_date="2015-01-01", end_date=None):
+    """
+    Hämtar alla historiska anföranden från 2015-01-01 och framåt,
+    eller inom ett valfritt datumintervall.
+    """
     dfs = []
     batch_size = 1000
     offset = 0
 
-    while True:
-        resp = (
-            supabase.table("speeches")
-            .select("text, parti, protokoll_datum")
-            .order("protokoll_datum", ascending=True)   # Viktigt: sortera vid hämtning
-            .range(offset, offset + batch_size - 1)
-            .execute()
-        )
+    query = supabase.table("speeches").select("text, parti, protokoll_datum")
 
+    # Filtrera på datum
+    if start_date:
+        query = query.gte("protokoll_datum", str(start_date))
+    if end_date:
+        query = query.lte("protokoll_datum", str(end_date))
+
+    query = query.order("protokoll_datum", ascending=True)
+
+    while True:
+        resp = query.range(offset, offset + batch_size - 1).execute()
         if resp.data:
             dfs.append(pd.DataFrame(resp.data))
             if len(resp.data) < batch_size:
-                break  # Ingen mer data kvar
+                break
             offset += batch_size
         else:
             break
@@ -91,17 +97,18 @@ def fetch_speeches_historical():
         df = pd.concat(dfs, ignore_index=True)
 
         # Säkerställ rätt datumformat
-        df['protokoll_datum'] = pd.to_datetime(df['protokoll_datum'], errors='coerce')
+        df["protokoll_datum"] = pd.to_datetime(df["protokoll_datum"], errors="coerce")
 
         # Ta bort rader utan giltigt datum
         df = df.dropna(subset=["protokoll_datum"])
 
-        # Sortera en extra gång i Pandas för att garantera korrekt ordning
+        # Sortera en extra gång i Pandas
         df = df.sort_values("protokoll_datum").reset_index(drop=True)
 
         return df
-    
+
     return pd.DataFrame(columns=["text", "parti", "protokoll_datum"])
+
 
 # -----------------------------
 # Skrivfunktioner

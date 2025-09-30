@@ -645,7 +645,7 @@ elif page == "Historik":
     with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}' tio år tillbaka..."):
         
         # Hämta ALL data inom den maximala tidsperioden
-        df_all_data = fetch_speeches_historical(START_DATE_LIMIT, today)
+        df_all_data = fetch_speeches_historical("2015-01-01", today)
         
         if df_all_data.empty:
             st.warning(f"Hittade ingen data alls inom den valda tidsgränsen ({START_DATE_LIMIT.year} till {today.year}).")
