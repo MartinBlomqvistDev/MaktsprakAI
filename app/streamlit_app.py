@@ -363,7 +363,7 @@ def welcome_page():
             """
         )
 
-    # === KOMPAKT NYHETSRUTA MED FAST SCROLLBALK OCH H6-RUBRIKER ===
+    # === KOMPAKT NYHETSRUTA MED FAST SCROLL OCH H6-RUBRIKER ===
     with news_col:
         try:
             all_articles = fetch_party_articles(articles_per_party=2)["articles"]
@@ -371,13 +371,32 @@ def welcome_page():
                 st.warning("Kunde inte hämta partinyheter.")
             else:
                 news_html = """
-                <div class="news-box" style="
-                    max-height: 300px;           /* Kompakt höjd */
-                    overflow-y: scroll;           /* Scrollbar alltid synlig */
+                <style>
+                .news-box {
+                    max-height: 500px;
+                    min-height: 200px;
+                    overflow-y: scroll;        /* Scrollbar alltid synlig */
                     padding: 10px;
                     border: 1px solid #555;
                     border-radius: 10px;
-                ">
+                }
+                /* Webkit scroll styling */
+                .news-box::-webkit-scrollbar {
+                    width: 8px;
+                }
+                .news-box::-webkit-scrollbar-track {
+                    background: #f1f1f1;
+                    border-radius: 10px;
+                }
+                .news-box::-webkit-scrollbar-thumb {
+                    background: #888;
+                    border-radius: 10px;
+                }
+                .news-box::-webkit-scrollbar-thumb:hover {
+                    background: #555;
+                }
+                </style>
+                <div class="news-box">
                 <h4 style="margin-bottom:10px;">Senaste partinyheterna</h4>
                 """
 
@@ -401,7 +420,6 @@ def welcome_page():
                 st.markdown(news_html, unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
-
 
 # =====================
 # Sidebar och Navigation
