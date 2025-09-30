@@ -24,6 +24,9 @@ data/db/               # IGNORERAR HELA MAPPARNA data/db/
 data/db/maktsprakai.db
 *.db                   # IGNORERAR ALLA filer med .db
 *.sqlite
+data/parquet/
+*.parquet
+
 
 # Lokalt sparade modeller och temporära filer från träning
 *.pt
