@@ -384,7 +384,7 @@ with st.sidebar:
     )
     st.divider()
 
-    # --- CSS för nyhetsruta i sidebar med modern scrollbar ---
+    # --- CSS för nyhetsruta i sidebar utan scroll ---
     st.markdown("""
         <style>
         .news-box-sidebar {
@@ -392,26 +392,7 @@ with st.sidebar:
             border-radius: 8px;
             padding: 10px;
             background-color: transparent;
-            max-height: 250px;
-            overflow-y: auto;
             margin-bottom: 15px;
-        }
-
-        .news-box-sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .news-box-sidebar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .news-box-sidebar::-webkit-scrollbar-thumb {
-            background-color: #888;
-            border-radius: 3px;
-        }
-
-        .news-box-sidebar::-webkit-scrollbar-thumb:hover {
-            background-color: #555;
         }
 
         .news-box-sidebar h3 {
@@ -458,7 +439,6 @@ with st.sidebar:
             st.info("Inga nyheter kunde hämtas just nu.")
     except Exception:
         st.error("Fel vid hämtning av nyheter.")
-
 
 
 # =====================
