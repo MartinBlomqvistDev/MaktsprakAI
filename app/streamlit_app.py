@@ -252,182 +252,34 @@ def welcome_page():
     st.title("MaktspråkAI: Den politiska språkkartan")
     st.markdown("Interaktiv AI-analys av partiernas retorik och mönster.")
 
-    # News-box CSS
-    st.markdown("""
-        <style>
-        .news-box {
-            border: 1px solid #555;           /* En tunn grå ram */
-            border-radius: 10px;              /* Mjukt rundade hörn */
-            padding: 15px;                    /* Lite luft inuti rutan */
-            background-color: transparent;    /* Transparent bakgrund, eller välj en färg t.ex. #1E1E2A */
-            margin-bottom: 20px;              /* Lite utrymme under rutan */
-        }
-        .news-box h3 {
-            margin-top: 0;                    /* Tar bort extra utrymme ovanför rubriken */
-            margin-bottom: 10px;
-            font-size: 1.25em;                /* En lagom stor rubrik */
-        }
-        .news-box ul {
-            list-style-type: none;            /* Tar bort prickarna i listan */
-            padding-left: 0;                  /* Tar bort indraget */
-            margin-bottom: 0;
-        }
-        .news-box li {
-            margin-bottom: 8px;               /* Lite avstånd mellan varje nyhetsrad */
-            font-size: 0.9em;                 /* Något mindre text för nyheterna */
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # === Layout med två kolumner ===
+    main_col, news_col = st.columns([2, 1])  # Vänster: text, Höger: nyheter
 
-    # # === NY LAYOUT MED TVÅ KOLUMNER ===
-    main_col, news_col = st.columns([2, 1])  # Vänster kolumn är dubbelt så bred som den högra
     with main_col:
-        # Dashboarddelen
         st.divider()
-        live_results_df, live_accuracy, total_live_articles = run_live_evaluation(articles_per_party=4)
-    
         total_speeches = fetch_speeches_count()
         latest_speech_date = fetch_latest_speech_date_cached()
 
-        col1, col2, col3 = st.columns(3)
-        col1.metric(f"Träffsäkerhet ({total_live_articles} artiklar)", f"{live_accuracy:.1f}%")
-        col2.metric("Totalt anföranden i databasen", f"{total_speeches:,}".replace(",", " "))
-        col3.metric("Senaste anförande", latest_speech_date)
-    
-        st.divider()
-        
-        st.markdown(
-            """
-            ### Martin Blomqvist – Om mig och projektet
-
-            Jag heter **Martin Blomqvist** och drivs av att förstå och förbättra komplexa system. Min bakgrund är bred – jag har arbetat i vitt skilda miljöer, från **ekologiskt jordbruk** till avancerad **dataanalys**. Oavsett sammanhang har fokus alltid legat på detsamma: att **hitta den dolda strukturen** i kaoset och bygga lösningar som fungerar i den verkliga världen.
-            
-            ---
-            
-            **MaktspråkAI** är en direkt tillämpning av dessa erfarenheter. Det är ett fullskaligt **data science- och NLP-projekt** som skapades under EC Utbildnings Data Scientist-program. Det visar hur jag kombinerar min systemanalytiska förmåga med teknisk kompetens.
-
-            **Projektets mål** är att **utforska, analysera och visualisera det politiska språkbruket i Sveriges riksdag** genom att kombinera modern maskininlärning och AI med robust systemdesign. Jag tar nu steget ut i yrkeslivet via min LIA och ser fram emot att fortsätta utveckla dessa kunskaper och skapa fler användbara produkter. **Följ gärna min fortsatta resa in i detta spännande fält på [LinkedIn](https://www.linkedin.com/in/martin-blomqvist)!**
-
-            ---
-
-            *Nyckelfrågor projektet besvarar:*
-            * Kan jag **förutsäga ett partis tillhörighet** enbart genom språkbruk?
-            * Vilka **retoriska mönster** skiljer partierna åt i olika frågor?
-            * Hur förändras språket över tid i **politiska debatter**?
-            """
-        )
+        st.metric("Totalt anföranden i databasen", f"{total_speeches:,}".replace(",", " "))
+        st.metric("Senaste anförande", latest_speech_date)
 
         st.divider()
+        st.markdown("### Om projektet")
+        st.markdown("""
+        Jag heter **Martin Blomqvist** och driver MaktspråkAI...
+        """)
 
-        st.markdown(
-            """
-            ### Teknisk arkitektur: en kraftfull AI-stack
-
-            Detta projekt är byggt på en robust och modern **Python-stack**, utformad för att hantera hela AI-livscykeln – från datainsamling till avancerad NLP och interaktiv visualisering. Jag har valt branschledande verktyg för att säkerställa **skalbarhet, reproducerbarhet** och högsta analysprecision.
-            
-            ---
-
-            ### Databehandling & modellkärna (the AI engine)
-
-            | Verktyg | Funktion & analysdjup |
-            | :--- | :--- |
-            | **Transformers (Hugging Face)** | **Kärnan i min NLP-lösning.** Jag utnyttjar och finjusterar **state-of-the-art BERT-modellen (KB/bert-base-swedish-cased)** för banbrytande textklassificering på svenska. Detta möjliggör djup semantisk förståelse och överträffar traditionella metoder i komplexiteten hos politisk text. |
-            | **Scikit-learn** | **Modellutvärdering & baslinjeanalys.** Används för att etablera en pålitlig baslinje med klassiska metoder (t.ex. TF-IDF, SVM) och rigorösa evalueringar (**precision, recall, F1-score**). Säkerställer att transformer-modellerna bevisligen förbättrar modellen, även i svåra fall såsom vid snedvriden data. |
-            | **Pandas & NumPy** | **Ryggraden i Data Science.** Dessa Python-bibliotek används för effektiv datastrukturering, tidsserieanalys och rensning av miljontals textenheter. Hanterar komplexa beräkningar och transformationer nödvändiga för att förbereda NLP-dataset. |
-
-            ---
-
-            ### Webbapplikation & visualisering (the interface)
-
-            | Verktyg | Funktion & interaktion |
-            | :--- | :--- |
-            | **Streamlit** | **Interaktiv webbapplikation.** Bygger den snabba och användarvänliga GUI:n. Gör det möjligt för slutanvändare att **omedelbart testa AI-modeller live**, filtrera analysresultat och utforska data direkt i webbläsaren utan någon lokal installation. |
-            | **Plotly, Matplotlib & Calplot** | **Dynamisk visualisering.** Ger liv åt datan. **Plotly** skapar interaktiva grafer i applikationen, Matplotlib används för statiska analyser, och Calplot visualiserar aktivitetsmönster och trender över tid. |
-
-            ---
-
-            ### Datainfrastruktur & MLOps
-
-            | Verktyg | Funktion & driftsäkerhet |
-            | :--- | :--- |
-            | **PostgreSQL (via Supabase)** | **Skalbar databaslösning.** Databasen hanterar effektivt över **40 000 riksdagsanföranden** med komplett metadata. Den driftade PostgreSQL-instansen via Supabase säkerställer **snabb och pålitlig åtkomst** till stora datavolymer. |
-            | **ETL & Reproducerbarhet** | **Robust data pipeline.** ETL-pipelinen (Extract, Transform, Load) uppdaterar databasen direkt. Jag använder checkpointing, loggning och weighted sampling för att säkerställa att modellträning är **reproducerbar** och att nya data automatiskt införlivas i analysen. |
-            
-            ---
-            
-            ### Kontakt & Portfolio
-
-            * **E-post:** [cm.blomqvist@gmail.com](mailto:cm.blomqvist@gmail.com)
-            * **LinkedIn:** [Martin Blomqvist](https://www.linkedin.com/in/martin-blomqvist)
-            * **GitHub:** [Martin Blomqvist](https://github.com/martinblomqvistdev)
-            """
-        )
-
-    # === KOMPAKT NYHETSRUTA MED FAST SCROLL, FULL LÄNGD OCH H6-RUBRIKER ===
     with news_col:
+        st.subheader("Senaste inrikesnyheterna")
         try:
-            all_articles = fetch_party_articles(articles_per_party=2)["articles"]
-            if not all_articles:
-                st.warning("Kunde inte hämta partinyheter.")
+            news_items = fetch_news()
+            if news_items:
+                for item in news_items:
+                    st.markdown(f"- [{item['title']}]({item['link']}) ({item['published']})")
             else:
-                news_html = """
-                <style>
-                .news-box {
-                    height: 100%;              /* Full höjd */
-                    overflow-y: scroll;        /* Scroll alltid synlig */
-                    padding: 10px;
-                    border: 1px solid #555;
-                    border-radius: 10px;
-                }
-                /* Webkit scroll styling */
-                .news-box::-webkit-scrollbar {
-                    width: 8px;
-                }
-                .news-box::-webkit-scrollbar-track {
-                    background: #f1f1f1;
-                    border-radius: 10px;
-                }
-                .news-box::-webkit-scrollbar-thumb {
-                    background: #888;
-                    border-radius: 10px;
-                }
-                .news-box::-webkit-scrollbar-thumb:hover {
-                    background: #555;
-                }
-                </style>
-                <div class="news-box">
-                <h4 style="margin-bottom:10px;">Senaste partinyheterna</h4>
-                """
-
-                # Gruppera artiklar per parti
-                articles_by_party = {}
-                for art in all_articles:
-                    art_date = pd.to_datetime(art.get("date", None), errors="coerce")
-                    if art_date is None or pd.isna(art_date):
-                        continue
-                    art["date_obj"] = art_date
-                    articles_by_party.setdefault(art["true_party"], []).append(art)
-
-                # Sortera partier efter senaste artikel
-                sorted_parties = sorted(
-                    articles_by_party.items(),
-                    key=lambda x: max([a["date_obj"] for a in x[1]]),
-                    reverse=True  # nyaste först
-                )
-
-                for party, arts in sorted_parties:
-                    full_name = PARTY_NAMES.get(party, party)
-                    news_html += f'<h6 style="font-weight:200; margin-top:6px; margin-bottom:2px;">{full_name}</h6>'
-                    news_html += '<ul style="padding-left: 15px; margin-top:0; margin-bottom:5px;">'
-                    for art in arts:
-                        news_html += f'<li style="margin-bottom:3px;"><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
-                    news_html += '</ul>'
-
-                news_html += "</div>"
-                st.markdown(news_html, unsafe_allow_html=True)
-
-        except Exception as e:
-            st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
+                st.info("Inga nyheter kunde hämtas just nu.")
+        except Exception:
+            st.error("Fel vid hämtning av nyheter.")
 
 # =====================
 # Sidebar och Navigation
