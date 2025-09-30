@@ -57,6 +57,17 @@ st.set_page_config(
 # =====================
 PARTY_ORDER = ["V", "MP", "S", "C", "L", "KD", "M", "SD"] 
 PAGE_OPTIONS = ["Om projektet", "Partiprediktion", "Språkbruk & Retorik", "Evaluering", "Historik"]
+PARTY_NAMES = {
+    "V": "Vänsterpartiet",
+    "MP": "Miljöpartiet",
+    "S": "Socialdemokraterna",
+    "C": "Centerpartiet",
+    "L": "Liberalerna",
+    "KD": "Kristdemokraterna",
+    "M": "Moderaterna",
+    "SD": "Sverigedemokraterna"
+}
+
 
 # =====================
 # Helper-funktioner
