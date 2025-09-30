@@ -686,76 +686,72 @@ elif page == "Språkbruk & Retorik":
                     st.write(f"**{party}** (För lite text)")
 
 
-elif page == "Evaluering":
-    st.header("Automatisk Testbänk: Prediktion på partiernas egna texter")
-    
-    # === NY, MER FÖRKLARANDE INFO-BOX ===
-    st.info("""
-    Hämta och evaluera de senaste texterna direkt från riksdagspartiernas hemsidor. 
-    **Notera:** Antalet funna artiklar kan vara lägre än det begärda då vissa partier har inaktiva RSS-flöden 
-    eller att deras senaste inlägg är videoklipp som sållats bort av kvalitetsfiltret.
-    """)
+    # === KOMPAKT NYHETSRUTA MED LIVE-ARTIKLAR OCH H6-RUBRIKER ===
+    with news_col:
+        try:
+            all_articles = st.session_state.fetch_results.get("articles", [])
+            if not all_articles:
+                st.warning("Kunde inte hämta partinyheter.")
+            else:
+                news_html = """
+                <style>
+                .news-box {
+                    height: 100%;              /* Full höjd */
+                    overflow-y: scroll;        /* Scroll alltid synlig */
+                    padding: 10px;
+                    border: 1px solid #555;
+                    border-radius: 10px;
+                }
+                .news-box::-webkit-scrollbar {
+                    width: 8px;
+                }
+                .news-box::-webkit-scrollbar-track {
+                    background: #f1f1f1;
+                    border-radius: 10px;
+                }
+                .news-box::-webkit-scrollbar-thumb {
+                    background: #888;
+                    border-radius: 10px;
+                }
+                .news-box::-webkit-scrollbar-thumb:hover {
+                    background: #555;
+                }
+                </style>
+                <div class="news-box">
+                <h4 style="margin-bottom:10px;">Senaste partinyheterna</h4>
+                """
 
-    num_per_party = st.slider(
-        "Antal senaste artiklar att hämta per parti", 1, 5, 2
-    )
-    
-    show_debug = st.checkbox("Visa felsökningslogg")
+                # Gruppera artiklar per parti och hitta senaste datum
+                articles_by_party = {}
+                latest_per_party = {}
+                for art in all_articles:
+                    party = art["true_party"]
+                    articles_by_party.setdefault(party, []).append(art)
+                    art_date = pd.to_datetime(art.get("date", pd.Timestamp.now()))  # fallback till nu
+                    if party not in latest_per_party or art_date > latest_per_party[party]:
+                        latest_per_party[party] = art_date
 
-    if 'fetch_results' not in st.session_state:
-        st.session_state.fetch_results = {"articles": [], "log": [], "found_parties": set()}
+                # Sortera partier efter senaste artikel
+                sorted_parties = sorted(latest_per_party.items(), key=lambda x: x[1], reverse=True)
+                sorted_parties = [p[0] for p in sorted_parties]
 
-    if st.button(f"Hämta & Evaluera upp till {num_per_party * 8} partitexter"):
-        with st.spinner(f"Hämtar och analyserar texter... Detta kan ta en stund."):
-            st.session_state.fetch_results = fetch_party_articles(articles_per_party=num_per_party)
-            # Spara vilka partier vi faktiskt hittade artiklar för
-            st.session_state.fetch_results["found_parties"] = {a['true_party'] for a in st.session_state.fetch_results.get("articles", [])}
-        st.rerun()
+                # Bygg HTML för artiklar
+                for party in sorted_parties:
+                    arts = articles_by_party[party][:2]  # max 2 artiklar per parti
+                    full_name = PARTY_NAMES.get(party, party)
+                    news_html += f'<h6 style="font-weight:200; margin-top:6px; margin-bottom:2px;">{full_name}</h6>'
+                    news_html += '<ul style="padding-left: 15px; margin-top:0; margin-bottom:5px;">'
+                    for art in arts:
+                        title = art.get("title", "Ingen titel")
+                        link = art.get("link", "#")
+                        news_html += f'<li style="margin-bottom:3px;"><a href="{link}" target="_blank">{title}</a></li>'
+                    news_html += '</ul>'
 
-    articles_to_analyze = st.session_state.fetch_results.get("articles", [])
-    debug_log = st.session_state.fetch_results.get("log", [])
-    found_parties = st.session_state.fetch_results.get("found_parties", set())
+                news_html += "</div>"
+                st.markdown(news_html, unsafe_allow_html=True)
 
-    # Om vi har klickat på knappen, visa en sammanfattning
-    if debug_log: 
-        # === NY SAMMANFATTNING ÖVER RESULTATET ===
-        st.subheader("Resultat")
-        
-        missing_parties = set(PARTY_ORDER) - found_parties
-        if missing_parties:
-            # Gör om set till en snygg sträng, t.ex. "S, C, KD, MP"
-            missing_parties_str = ", ".join(sorted(list(missing_parties)))
-            st.warning(f"**Kunde inte hitta giltiga artiklar för:** {missing_parties_str}")
-
-        if articles_to_analyze:
-            # (Hela din existerande kod för att visa metrics och tabell)
-            results = []
-            for article in articles_to_analyze:
-                cleaned_for_model = clean_text(article['content'])
-                party_probs = predict_party(model, tokenizer, [cleaned_for_model])
-                predicted_party = max(party_probs[0].items(), key=lambda x: x[1])[0]
-                results.append({
-                    "Titel": article['title'], "Sant parti": article['true_party'], "Modellens gissning": predicted_party,
-                    "Korrekt?": "✅" if article['true_party'] == predicted_party else "❌", "Länk": article['link']
-                })
-            results_df = pd.DataFrame(results)
-            correct_count = (results_df["Korrekt?"] == "✅").sum()
-            total_count = len(results_df)
-            accuracy = (correct_count / total_count) * 100 if total_count > 0 else 0
-
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Antal texter analyserade", f"{total_count}")
-            col2.metric("Antal korrekta gissningar", f"{correct_count}")
-            col3.metric("Träffsäkerhet", f"{accuracy:.1f}%")
-            st.divider()
-            st.dataframe(results_df, column_config={"Länk": st.column_config.LinkColumn("Länk", display_text="Öppna artikel")})
-        else:
-            st.error("Inga giltiga artiklar alls kunde hittas från någon av partiernas flöden.")
-
-    if show_debug:
-        st.divider()
-        st.subheader("Felsökningslogg")
-        st.code("\n".join(debug_log), language="text")
+        except Exception as e:
+            st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
 
 elif page == "Historik":
     st.header("Analysera retorikens utveckling över tid")
