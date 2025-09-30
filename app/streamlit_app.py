@@ -352,7 +352,7 @@ def welcome_page():
             """
         )
 
-    # === NYHETSRUTAN MED PARTINAMN SOM UNDERRUBRIK ===
+    # === NYHETSRUTAN MED LÄTTARE RUBRIKER OCH HELA PARTINAMN ===
     with news_col:
         try:
             all_articles = fetch_party_articles(articles_per_party=2)["articles"]
@@ -366,18 +366,20 @@ def welcome_page():
                 for art in all_articles:
                     articles_by_party.setdefault(art["true_party"], []).append(art)
                 
-                for party, arts in articles_by_party.items():
-                    news_html += f'<h4>{party}</h4><ul>'
-                    for art in arts:
-                        news_html += f'<li><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
-                    news_html += '</ul>'
+                # Sortera enligt PARTY_ORDER och använd fullständigt namn
+                for party in PARTY_ORDER:
+                    if party in articles_by_party:
+                        arts = articles_by_party[party]
+                        full_name = PARTY_NAMES[party]  # mappning finns redan
+                        news_html += f'<h4 style="font-weight:400; margin-top:10px;">{full_name}</h4><ul>'
+                        for art in arts:
+                            news_html += f'<li><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
+                        news_html += '</ul>'
                 
                 news_html += '</div>'
                 st.markdown(news_html, unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
-
-
 
 # =====================
 # Sidebar och Navigation
