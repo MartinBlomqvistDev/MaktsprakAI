@@ -64,7 +64,7 @@ def fetch_random_speeches(limit: int = 5):
     return data[:limit]
 
 @st.cache_data(ttl=1800)
-def fetch_all_historical_speeches():
+def fetch_speeches_historical():
     dfs = []
     batch_size = 1000
     offset = 0
