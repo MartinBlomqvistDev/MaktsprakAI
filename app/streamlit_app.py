@@ -382,7 +382,7 @@ def welcome_page():
                     if party in articles_by_party:
                         arts = articles_by_party[party]
                         full_name = PARTY_NAMES[party]  # mappning finns redan
-                        news_html += f'<h4 style="font-weight:400; margin-top:10px;">{full_name}</h4><ul>'
+                        news_html += f'<h5 style="font-weight:200; margin-top:10px;">{full_name}</h5><ul>'
                         for art in arts:
                             news_html += f'<li><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
                         news_html += '</ul>'
