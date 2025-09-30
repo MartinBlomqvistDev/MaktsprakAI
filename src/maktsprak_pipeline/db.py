@@ -81,7 +81,8 @@ def fetch_speeches_historical(start_date="2015-01-01", end_date=None):
     if end_date:
         query = query.lte("protokoll_datum", str(end_date))
 
-    query = query.order("protokoll_datum", ascending=True)
+    # Rätt param: desc=False betyder stigande ordning
+    query = query.order("protokoll_datum", desc=False)
 
     while True:
         resp = query.range(offset, offset + batch_size - 1).execute()
