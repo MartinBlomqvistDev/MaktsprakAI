@@ -705,7 +705,6 @@ elif page == "Historik":
         if not valid_dates_df.empty:
             min_date = valid_dates_df['protokoll_datum'].min().strftime('%Y-%m-%d')
             max_date = valid_dates_df['protokoll_datum'].max().strftime('%Y-%m-%d')
-            st.info(f"Efterfrågad period: **{requested_range}**\n")
         else:
             st.warning("Hittade inga giltiga datum i den hämtade datan efter rensning.")
             st.stop()
