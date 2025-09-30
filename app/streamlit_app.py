@@ -57,17 +57,6 @@ st.set_page_config(
 # =====================
 PARTY_ORDER = ["V", "MP", "S", "C", "L", "KD", "M", "SD"] 
 PAGE_OPTIONS = ["Om projektet", "Partiprediktion", "Språkbruk & Retorik", "Evaluering", "Historik"]
-PARTY_NAMES = {
-    "V": "Vänsterpartiet",
-    "MP": "Miljöpartiet",
-    "S": "Socialdemokraterna",
-    "C": "Centerpartiet",
-    "L": "Liberalerna",
-    "KD": "Kristdemokraterna",
-    "M": "Moderaterna",
-    "SD": "Sverigedemokraterna"
-}
-
 
 # =====================
 # Helper-funktioner
@@ -252,34 +241,133 @@ def welcome_page():
     st.title("MaktspråkAI: Den politiska språkkartan")
     st.markdown("Interaktiv AI-analys av partiernas retorik och mönster.")
 
-    # === Layout med två kolumner ===
-    main_col, news_col = st.columns([2, 1])  # Vänster: text, Höger: nyheter
+    # News-box CSS
+    st.markdown("""
+        <style>
+        .news-box {
+            border: 1px solid #555;           /* En tunn grå ram */
+            border-radius: 10px;              /* Mjukt rundade hörn */
+            padding: 15px;                    /* Lite luft inuti rutan */
+            background-color: transparent;    /* Transparent bakgrund, eller välj en färg t.ex. #1E1E2A */
+            margin-bottom: 20px;              /* Lite utrymme under rutan */
+        }
+        .news-box h3 {
+            margin-top: 0;                    /* Tar bort extra utrymme ovanför rubriken */
+            margin-bottom: 10px;
+            font-size: 1.25em;                /* En lagom stor rubrik */
+        }
+        .news-box ul {
+            list-style-type: none;            /* Tar bort prickarna i listan */
+            padding-left: 0;                  /* Tar bort indraget */
+            margin-bottom: 0;
+        }
+        .news-box li {
+            margin-bottom: 8px;               /* Lite avstånd mellan varje nyhetsrad */
+            font-size: 0.9em;                 /* Något mindre text för nyheterna */
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
+    # # === NY LAYOUT MED TVÅ KOLUMNER ===
+    main_col, news_col = st.columns([2, 1])  # Vänster kolumn är dubbelt så bred som den högra
     with main_col:
+        # Dashboarddelen
         st.divider()
+        live_results_df, live_accuracy, total_live_articles = run_live_evaluation(articles_per_party=4)
+    
         total_speeches = fetch_speeches_count()
         latest_speech_date = fetch_latest_speech_date_cached()
 
-        st.metric("Totalt anföranden i databasen", f"{total_speeches:,}".replace(",", " "))
-        st.metric("Senaste anförande", latest_speech_date)
+        col1, col2, col3 = st.columns(3)
+        col1.metric(f"Träffsäkerhet ({total_live_articles} artiklar)", f"{live_accuracy:.1f}%")
+        col2.metric("Totalt anföranden i databasen", f"{total_speeches:,}".replace(",", " "))
+        col3.metric("Senaste anförande", latest_speech_date)
+    
+        st.divider()
+        
+        st.markdown(
+            """
+            ### Martin Blomqvist – Om mig och projektet
+
+            Jag heter **Martin Blomqvist** och drivs av att förstå och förbättra komplexa system. Min bakgrund är bred – jag har arbetat i vitt skilda miljöer, från **ekologiskt jordbruk** till avancerad **dataanalys**. Oavsett sammanhang har fokus alltid legat på detsamma: att **hitta den dolda strukturen** i kaoset och bygga lösningar som fungerar i den verkliga världen.
+            
+            ---
+            
+            **MaktspråkAI** är en direkt tillämpning av dessa erfarenheter. Det är ett fullskaligt **data science- och NLP-projekt** som skapades under EC Utbildnings Data Scientist-program. Det visar hur jag kombinerar min systemanalytiska förmåga med teknisk kompetens.
+
+            **Projektets mål** är att **utforska, analysera och visualisera det politiska språkbruket i Sveriges riksdag** genom att kombinera modern maskininlärning och AI med robust systemdesign. Jag tar nu steget ut i yrkeslivet via min LIA och ser fram emot att fortsätta utveckla dessa kunskaper och skapa fler användbara produkter. **Följ gärna min fortsatta resa in i detta spännande fält på [LinkedIn](https://www.linkedin.com/in/martin-blomqvist)!**
+
+            ---
+
+            *Nyckelfrågor projektet besvarar:*
+            * Kan jag **förutsäga ett partis tillhörighet** enbart genom språkbruk?
+            * Vilka **retoriska mönster** skiljer partierna åt i olika frågor?
+            * Hur förändras språket över tid i **politiska debatter**?
+            """
+        )
 
         st.divider()
-        st.markdown("### Om projektet")
-        st.markdown("""
-        Jag heter **Martin Blomqvist** och driver MaktspråkAI...
-        """)
 
+        st.markdown(
+            """
+            ### Teknisk arkitektur: en kraftfull AI-stack
+
+            Detta projekt är byggt på en robust och modern **Python-stack**, utformad för att hantera hela AI-livscykeln – från datainsamling till avancerad NLP och interaktiv visualisering. Jag har valt branschledande verktyg för att säkerställa **skalbarhet, reproducerbarhet** och högsta analysprecision.
+            
+            ---
+
+            ### Databehandling & modellkärna (the AI engine)
+
+            | Verktyg | Funktion & analysdjup |
+            | :--- | :--- |
+            | **Transformers (Hugging Face)** | **Kärnan i min NLP-lösning.** Jag utnyttjar och finjusterar **state-of-the-art BERT-modellen (KB/bert-base-swedish-cased)** för banbrytande textklassificering på svenska. Detta möjliggör djup semantisk förståelse och överträffar traditionella metoder i komplexiteten hos politisk text. |
+            | **Scikit-learn** | **Modellutvärdering & baslinjeanalys.** Används för att etablera en pålitlig baslinje med klassiska metoder (t.ex. TF-IDF, SVM) och rigorösa evalueringar (**precision, recall, F1-score**). Säkerställer att transformer-modellerna bevisligen förbättrar modellen, även i svåra fall såsom vid snedvriden data. |
+            | **Pandas & NumPy** | **Ryggraden i Data Science.** Dessa Python-bibliotek används för effektiv datastrukturering, tidsserieanalys och rensning av miljontals textenheter. Hanterar komplexa beräkningar och transformationer nödvändiga för att förbereda NLP-dataset. |
+
+            ---
+
+            ### Webbapplikation & visualisering (the interface)
+
+            | Verktyg | Funktion & interaktion |
+            | :--- | :--- |
+            | **Streamlit** | **Interaktiv webbapplikation.** Bygger den snabba och användarvänliga GUI:n. Gör det möjligt för slutanvändare att **omedelbart testa AI-modeller live**, filtrera analysresultat och utforska data direkt i webbläsaren utan någon lokal installation. |
+            | **Plotly, Matplotlib & Calplot** | **Dynamisk visualisering.** Ger liv åt datan. **Plotly** skapar interaktiva grafer i applikationen, Matplotlib används för statiska analyser, och Calplot visualiserar aktivitetsmönster och trender över tid. |
+
+            ---
+
+            ### Datainfrastruktur & MLOps
+
+            | Verktyg | Funktion & driftsäkerhet |
+            | :--- | :--- |
+            | **PostgreSQL (via Supabase)** | **Skalbar databaslösning.** Databasen hanterar effektivt över **40 000 riksdagsanföranden** med komplett metadata. Den driftade PostgreSQL-instansen via Supabase säkerställer **snabb och pålitlig åtkomst** till stora datavolymer. |
+            | **ETL & Reproducerbarhet** | **Robust data pipeline.** ETL-pipelinen (Extract, Transform, Load) uppdaterar databasen direkt. Jag använder checkpointing, loggning och weighted sampling för att säkerställa att modellträning är **reproducerbar** och att nya data automatiskt införlivas i analysen. |
+            
+            ---
+            
+            ### Kontakt & Portfolio
+
+            * **E-post:** [cm.blomqvist@gmail.com](mailto:cm.blomqvist@gmail.com)
+            * **LinkedIn:** [Martin Blomqvist](https://www.linkedin.com/in/martin-blomqvist)
+            * **GitHub:** [Martin Blomqvist](https://github.com/martinblomqvistdev)
+            """
+        )
+
+    # === NYHETSRUTAN ===
     with news_col:
-        st.subheader("Senaste inrikesnyheterna")
         try:
             news_items = fetch_news()
-            if news_items:
-                for item in news_items:
-                    st.markdown(f"- [{item['title']}]({item['link']}) ({item['published']})")
+            if not news_items:
+                st.warning("Kunde inte hämta nyhetsflödet.")
             else:
-                st.info("Inga nyheter kunde hämtas just nu.")
-        except Exception:
-            st.error("Fel vid hämtning av nyheter.")
+                news_html = '<div class="news-box"><h3>Senaste inrikesnyheterna</h3><ul>'
+                for item in news_items:
+                    news_html += f'<li><a href="{item["link"]}" target="_blank">{item["title"]}</a></li>'
+                news_html += '</ul><div style="text-align: right; font-size: 0.8em; margin-top: 10px;">Från <a href="https://www.svt.se/nyheter/inrikes" target="_blank">SVT Nyheter</a></div></div>'
+                
+                st.markdown(news_html, unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"Ett fel uppstod vid hämtning av nyheter.")
+
 
 # =====================
 # Sidebar och Navigation
@@ -292,65 +380,7 @@ with st.sidebar:
         icons=["house-fill", "search", "bar-chart-line-fill", "check2-square", "graph-up"],
         menu_icon="cast", 
         default_index=0,
-        key="sidebar_main_menu"
     )
-    st.divider()
-
-    # --- CSS för nyhetsruta i sidebar utan scroll ---
-    st.markdown("""
-        <style>
-        .news-box-sidebar {
-            border: 1px solid #555;
-            border-radius: 8px;
-            padding: 10px;
-            background-color: transparent;
-            margin-bottom: 15px;
-        }
-
-        .news-box-sidebar h3 {
-            margin-top: 0;
-            margin-bottom: 8px;
-            font-size: 0.95em;
-        }
-
-        .news-box-sidebar ul {
-            list-style-type: none;
-            padding-left: 0;
-            margin-bottom: 0;
-        }
-
-        .news-box-sidebar li {
-            margin-bottom: 6px;
-            font-size: 0.85em;
-        }
-
-        .news-box-sidebar a {
-            text-decoration: none;
-            color: #1E90FF;
-        }
-
-        .news-box-sidebar a:hover {
-            text-decoration: underline;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # --- Inrikesnyheter i sidebar ---
-    try:
-        news_items = fetch_news()
-        if news_items:
-            news_html = '<div class="news-box-sidebar">'
-            news_html += '<h3>Senaste inrikesnyheterna</h3><ul>'
-            for item in news_items:
-                news_html += f'<li><a href="{item["link"]}" target="_blank">{item["title"]}</a></li>'
-            news_html += '</ul>'
-            news_html += '<div style="text-align: right; font-size: 0.75em; margin-top: 5px;">Från <a href="https://www.svt.se/nyheter/inrikes" target="_blank">SVT Nyheter</a></div>'
-            news_html += '</div>'
-            st.markdown(news_html, unsafe_allow_html=True)
-        else:
-            st.info("Inga nyheter kunde hämtas just nu.")
-    except Exception:
-        st.error("Fel vid hämtning av nyheter.")
 
 
 # =====================
@@ -537,75 +567,77 @@ elif page == "Språkbruk & Retorik":
                 else:
                     st.write(f"**{party}** (För lite text)")
 
-    # Nyhersruta i högerkolumnen
-    with news_col:
-        try:
-            # Hämta senaste artiklar live
-            fetch_results = fetch_party_articles(articles_per_party=2)
-            all_articles = fetch_results.get("articles", [])
-            
-            if not all_articles:
-                st.warning("Kunde inte hämta partinyheter.")
-            else:
-                news_html = """
-                <style>
-                .news-box {
-                    height: 100%;
-                    overflow-y: scroll;
-                    padding: 10px;
-                    border: 1px solid #555;
-                    border-radius: 10px;
-                }
-                .news-box::-webkit-scrollbar {
-                    width: 8px;
-                }
-                .news-box::-webkit-scrollbar-track {
-                    background: #f1f1f1;
-                    border-radius: 10px;
-                }
-                .news-box::-webkit-scrollbar-thumb {
-                    background: #888;
-                    border-radius: 10px;
-                }
-                .news-box::-webkit-scrollbar-thumb:hover {
-                    background: #555;
-                }
-                </style>
-                <div class="news-box">
-                <h4 style="margin-bottom:10px;">Senaste partinyheterna</h4>
-                """
 
-                # Gruppera artiklar per parti och senaste datum
-                articles_by_party = {}
-                latest_per_party = {}
-                for art in all_articles:
-                    party = art["true_party"]
-                    articles_by_party.setdefault(party, []).append(art)
-                    art_date = pd.to_datetime(art.get("date", pd.Timestamp.now()))
-                    if party not in latest_per_party or art_date > latest_per_party[party]:
-                        latest_per_party[party] = art_date
+elif page == "Evaluering":
+    st.header("Automatisk Testbänk: Prediktion på partiernas egna texter")
+    
+    # === NY, MER FÖRKLARANDE INFO-BOX ===
+    st.info("""
+    Hämta och evaluera de senaste texterna direkt från riksdagspartiernas hemsidor. 
+    **Notera:** Antalet funna artiklar kan vara lägre än det begärda då vissa partier har inaktiva RSS-flöden 
+    eller att deras senaste inlägg är videoklipp som sållats bort av kvalitetsfiltret.
+    """)
 
-                # Sortera partier efter senaste artikel
-                sorted_parties = sorted(latest_per_party.items(), key=lambda x: x[1], reverse=True)
-                sorted_parties = [p[0] for p in sorted_parties]
+    num_per_party = st.slider(
+        "Antal senaste artiklar att hämta per parti", 1, 5, 2
+    )
+    
+    show_debug = st.checkbox("Visa felsökningslogg")
 
-                # Bygg HTML
-                for party in sorted_parties:
-                    arts = articles_by_party[party][:2]
-                    full_name = PARTY_NAMES.get(party, party)
-                    news_html += f'<h6 style="font-weight:200; margin-top:6px; margin-bottom:2px;">{full_name}</h6>'
-                    news_html += '<ul style="padding-left: 15px; margin-top:0; margin-bottom:5px;">'
-                    for art in arts:
-                        title = art.get("title", "Ingen titel")
-                        link = art.get("link", "#")
-                        news_html += f'<li style="margin-bottom:3px;"><a href="{link}" target="_blank">{title}</a></li>'
-                    news_html += '</ul>'
+    if 'fetch_results' not in st.session_state:
+        st.session_state.fetch_results = {"articles": [], "log": [], "found_parties": set()}
 
-                news_html += "</div>"
-                st.markdown(news_html, unsafe_allow_html=True)
+    if st.button(f"Hämta & Evaluera upp till {num_per_party * 8} partitexter"):
+        with st.spinner(f"Hämtar och analyserar texter... Detta kan ta en stund."):
+            st.session_state.fetch_results = fetch_party_articles(articles_per_party=num_per_party)
+            # Spara vilka partier vi faktiskt hittade artiklar för
+            st.session_state.fetch_results["found_parties"] = {a['true_party'] for a in st.session_state.fetch_results.get("articles", [])}
+        st.rerun()
 
-        except Exception as e:
-            st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
+    articles_to_analyze = st.session_state.fetch_results.get("articles", [])
+    debug_log = st.session_state.fetch_results.get("log", [])
+    found_parties = st.session_state.fetch_results.get("found_parties", set())
+
+    # Om vi har klickat på knappen, visa en sammanfattning
+    if debug_log: 
+        # === NY SAMMANFATTNING ÖVER RESULTATET ===
+        st.subheader("Resultat")
+        
+        missing_parties = set(PARTY_ORDER) - found_parties
+        if missing_parties:
+            # Gör om set till en snygg sträng, t.ex. "S, C, KD, MP"
+            missing_parties_str = ", ".join(sorted(list(missing_parties)))
+            st.warning(f"**Kunde inte hitta giltiga artiklar för:** {missing_parties_str}")
+
+        if articles_to_analyze:
+            # (Hela din existerande kod för att visa metrics och tabell)
+            results = []
+            for article in articles_to_analyze:
+                cleaned_for_model = clean_text(article['content'])
+                party_probs = predict_party(model, tokenizer, [cleaned_for_model])
+                predicted_party = max(party_probs[0].items(), key=lambda x: x[1])[0]
+                results.append({
+                    "Titel": article['title'], "Sant parti": article['true_party'], "Modellens gissning": predicted_party,
+                    "Korrekt?": "✅" if article['true_party'] == predicted_party else "❌", "Länk": article['link']
+                })
+            results_df = pd.DataFrame(results)
+            correct_count = (results_df["Korrekt?"] == "✅").sum()
+            total_count = len(results_df)
+            accuracy = (correct_count / total_count) * 100 if total_count > 0 else 0
+
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Antal texter analyserade", f"{total_count}")
+            col2.metric("Antal korrekta gissningar", f"{correct_count}")
+            col3.metric("Träffsäkerhet", f"{accuracy:.1f}%")
+            st.divider()
+            st.dataframe(results_df, column_config={"Länk": st.column_config.LinkColumn("Länk", display_text="Öppna artikel")})
+        else:
+            st.error("Inga giltiga artiklar alls kunde hittas från någon av partiernas flöden.")
+
+    if show_debug:
+        st.divider()
+        st.subheader("Felsökningslogg")
+        st.code("\n".join(debug_log), language="text")
 
 elif page == "Historik":
     st.header("Analysera retorikens utveckling över tid")
