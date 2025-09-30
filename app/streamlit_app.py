@@ -363,7 +363,7 @@ def welcome_page():
             """
         )
 
-    # === KOMPAKT NYHETSRUTA MED SCROLL OCH H6-RUBRIKER + SCROLLINDIKATOR ===
+    # === KOMPAKT NYHETSRUTA MED FAST SCROLLBALK OCH H6-RUBRIKER ===
     with news_col:
         try:
             all_articles = fetch_party_articles(articles_per_party=2)["articles"]
@@ -372,10 +372,11 @@ def welcome_page():
             else:
                 news_html = """
                 <div class="news-box" style="
-                    max-height: 500px;           /* Fast höjd */
-                    overflow-y: auto;            /* Scrollbar om innehåll överstiger höjd */
-                    padding: 10px;               /* Kompakt padding */
-                    position: relative;           /* För scrollindikator */
+                    max-height: 300px;           /* Kompakt höjd */
+                    overflow-y: scroll;           /* Scrollbar alltid synlig */
+                    padding: 10px;
+                    border: 1px solid #555;
+                    border-radius: 10px;
                 ">
                 <h4 style="margin-bottom:10px;">Senaste partinyheterna</h4>
                 """
@@ -396,21 +397,11 @@ def welcome_page():
                             news_html += f'<li style="margin-bottom:3px;"><a href="{art["link"]}" target="_blank">{art["title"]}</a></li>'
                         news_html += '</ul>'
 
-                # Scrollindikator: liten gradient längst ner
-                news_html += """
-                <div style="
-                    position: sticky;
-                    bottom: 0;
-                    height: 20px;
-                    background: linear-gradient(to top, rgba(255,255,255,0.8), rgba(255,255,255,0));
-                    pointer-events: none;
-                "></div>
-                </div>
-                """
-
+                news_html += "</div>"
                 st.markdown(news_html, unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Ett fel uppstod vid hämtning av partinyheter: {e}")
+
 
 # =====================
 # Sidebar och Navigation
