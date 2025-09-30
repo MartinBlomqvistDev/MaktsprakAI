@@ -391,6 +391,7 @@ with st.sidebar:
         icons=["house-fill", "search", "bar-chart-line-fill", "check2-square", "graph-up"],
         menu_icon="cast", 
         default_index=0,
+        key="sidebar_main_menu"  # ✅ viktig för unik identifiering
     )
     st.divider()
 
@@ -405,7 +406,6 @@ with st.sidebar:
             st.info("Inga nyheter kunde hämtas just nu.")
     except Exception:
         st.error("Fel vid hämtning av nyheter.")
-
 
 # =====================
 # Huvudlogik för sidvisning
