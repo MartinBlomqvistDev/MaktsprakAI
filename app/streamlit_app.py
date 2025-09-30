@@ -681,88 +681,87 @@ elif page == "Evaluering":
 
 elif page == "Historik":
     st.header("Analysera retorikens utveckling över tid")
+    from datetime import date, timedelta
 
-    # --- 1. Definiera tidsgräns och ladda data ---
-    MAX_YEARS = 10 
+    # --- 1. Definiera tidsgräns och dagens datum ---
+    MAX_YEARS = 10
     today = date.today()
-    START_DATE_LIMIT = today - timedelta(days=365 * MAX_YEARS) 
+    START_DATE_LIMIT = today - timedelta(days=365 * MAX_YEARS)
 
-    # Läs lexikon och hämta kategorier
+    # --- Läs lexikon och hämta kategorier ---
     lex_df_temp = pd.read_csv(LEXICON_PATH)
     ton_columns = lex_df_temp['kategori'].unique().tolist()
 
-    # Användarval av kategori
+    # --- Användarval av kategori ---
     category_to_track = st.selectbox(
-        "Välj retorisk kategori att följa över tid:", 
+        "Välj retorisk kategori att följa över tid:",
         sorted(ton_columns),
         key="historic_category_select"
     )
 
-    with st.spinner(f"Analyserar historisk data för alla partier i kategorin '{category_to_track}' tio år tillbaka..."):
-        
-        # Hämta ALL data inom den maximala tidsperioden
+    # --- Funktion med cache för lexikonanalys ---
+    @st.cache_data
+    def compute_lexicon(df, text_col, lexicon_path):
+        return apply_ton_lexicon(df, text_col=text_col, lexicon_path=lexicon_path)
+
+    # --- Hämta historisk data ---
+    with st.spinner(f"Hämtar och analyserar historisk data ({MAX_YEARS} år)…"):
         df_all_data = fetch_speeches_historical("2015-01-01", today)
-        
         if df_all_data.empty:
-            st.warning(f"Hittade ingen data alls inom den valda tidsgränsen ({START_DATE_LIMIT.year} till {today.year}).")
+            st.warning(f"Ingen data inom {START_DATE_LIMIT.year} till {today.year}.")
             st.stop()
 
-        # 2. Robust hantering av DATUM
-        df_all_data['protokoll_datum'] = pd.to_datetime(df_all_data['protokoll_datum'], errors='coerce') 
+        # --- Robust datumhantering & filtrera tidigt ---
+        df_all_data['protokoll_datum'] = pd.to_datetime(df_all_data['protokoll_datum'], errors='coerce')
         valid_dates_df = df_all_data.dropna(subset=['protokoll_datum'])
+        valid_dates_df = valid_dates_df[valid_dates_df['protokoll_datum'] >= pd.Timestamp(START_DATE_LIMIT)]
 
-        # Debug-info: visa både efterfrågat och faktiskt intervall
-        requested_range = f"{START_DATE_LIMIT} → {today}"
-        if not valid_dates_df.empty:
-            min_date = valid_dates_df['protokoll_datum'].min().strftime('%Y-%m-%d')
-            max_date = valid_dates_df['protokoll_datum'].max().strftime('%Y-%m-%d')
-        else:
-            st.warning("Hittade inga giltiga datum i den hämtade datan efter rensning.")
+        if valid_dates_df.empty:
+            st.warning("Hittade inga giltiga datum efter filtrering.")
             st.stop()
 
-        # 3. Aggregera till KURVOR (per ÅR)
-        df_ton = apply_ton_lexicon(valid_dates_df, text_col="text", lexicon_path=LEXICON_PATH)
-        df_ton['År'] = df_ton['protokoll_datum'].dt.to_period('Y') 
+        # --- Lexikonanalys med cache ---
+        df_ton = compute_lexicon(valid_dates_df, text_col="text", lexicon_path=LEXICON_PATH)
+
+        # --- Aggregera per år ---
+        df_ton['År'] = df_ton['protokoll_datum'].dt.to_period('Y')
         df_plot_yearly = df_ton.groupby(['parti', 'År'], observed=False)[category_to_track].mean().reset_index()
-        df_plot_yearly['År'] = df_plot_yearly['År'].astype(str).str.split('-').str[0].astype(int) 
+        df_plot_yearly['År'] = df_plot_yearly['År'].astype(str).str.split('-').str[0].astype(int)
+        df_plot_yearly[category_to_track] = df_plot_yearly[category_to_track] * 100
         unique_years = sorted(df_plot_yearly['År'].unique())
 
-        # Konvertera till procent av partiets tal
-        df_plot_yearly[category_to_track] = df_plot_yearly[category_to_track] * 100
+    # --- Visualisering ---
+    st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
+    st.markdown(f"Visar trenden för de senaste {MAX_YEARS} åren med årlig upplösning.")
 
-        # 4. Visualisering
-        st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
-        st.markdown(f"Visar trenden för de senaste {MAX_YEARS} åren med årlig upplösning.")
+    fig = px.line(
+        df_plot_yearly,
+        x="År",
+        y=category_to_track,
+        color="parti",
+        markers=True,
+        title=f"Trend: '{category_to_track}' per parti över tid"
+    )
+    fig.update_xaxes(
+        title_text="År",
+        tickvals=unique_years,
+        ticktext=[str(year) for year in unique_years],
+        showgrid=True
+    )
+    fig.update_yaxes(
+        title_text=f"% av partiets tal med kategori '{category_to_track}'",
+        range=[df_plot_yearly[category_to_track].min() * 0.9,
+               df_plot_yearly[category_to_track].max() * 1.1]
+    )
+    fig.update_traces(hovertemplate='%{y:.1f}% av partiets tal')
 
-        fig = px.line(
-            df_plot_yearly,
-            x="År",
-            y=category_to_track,
-            color="parti",
-            markers=True,
-            title=f"Trend: '{category_to_track}' per parti över tid (Årlig upplösning)"
-        )
-
-        fig.update_xaxes(
-            title_text="År", 
-            tickvals=unique_years, 
-            ticktext=[str(year) for year in unique_years], 
-            showgrid=True
-        )
-        fig.update_yaxes(
-            title_text=f"% av partiets tal med kategori '{category_to_track}'", 
-            range=[df_plot_yearly[category_to_track].min() * 0.9,
-                   df_plot_yearly[category_to_track].max() * 1.1]
-        )
-        fig.update_traces(hovertemplate='%{y:.1f}% av partiets tal')
-
-        st.plotly_chart(fig, config={"responsive": True})
+    st.plotly_chart(fig, config={"responsive": True})
 
     st.divider()
 
-    # --- WordClouds per parti ---
+    # --- WordClouds per parti (på efterfrågan) ---
     st.subheader("Jämför partiernas vanligaste ord")
-    st.markdown("Välj en tidsperiod nedan för att se ordmoln sida vid sida.")
+    st.markdown("Välj tidsperiod nedan för ordmoln (genereras endast på begäran).")
 
     time_periods_for_cloud = {
         "Senaste 10 åren": (today - timedelta(days=365*10), today),
@@ -772,7 +771,7 @@ elif page == "Historik":
         "Senaste 90 dagarna": (today - timedelta(days=90), today),
         "Senaste 30 dagarna": (today - timedelta(days=30), today)
     }
-    
+
     period_options_reversed = list(time_periods_for_cloud.keys())[::-1]
     period_for_cloud = st.selectbox(
         "Välj period för ordmolnen:",
@@ -789,11 +788,9 @@ elif page == "Historik":
     else:
         st.markdown(f"**Visar ordmoln baserat på tal under perioden: {period_for_cloud}**")
         cols = st.columns(4)
-
         for i, party in enumerate(PARTY_ORDER):
             with cols[i % 4]:
                 df_party = df_all_data_cloud[df_all_data_cloud['parti'] == party]
-                
                 if df_party.empty:
                     st.write(f"**{party}** (Ingen data)")
                     continue
