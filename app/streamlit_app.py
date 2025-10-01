@@ -804,7 +804,7 @@ elif page == "Historik":
                     st.write(f"**{party}** (Ingen data)")
                     continue
 
-                raw_text_blob = " ".join(df[df["parti"] == party]["text"].dropna().tolist())
+                raw_text_blob = " ".join(df_all_data_cloud[df_all_data_cloud["parti"] == party]["text"].dropna().tolist())
                 cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
 
                 if not raw_text_blob.strip():
