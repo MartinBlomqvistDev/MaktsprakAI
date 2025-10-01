@@ -248,7 +248,7 @@ def run_live_evaluation(articles_per_party: int = 5):
     results = []
     for article in articles_to_analyze:
         cleaned_for_model = clean_text(article['content'])  # <-- Ändrat här
-        party_probs = predict_party(model, tokenizer, [cleaned_for_model])
+        party_probs = predict_party(model, tokenizer, [cleaned_for_model])  # <-- Ändrad rad
         predicted_party = max(party_probs[0].items(), key=lambda x: x[1])[0]
         results.append({
             "Titel": article['title'], 
@@ -316,7 +316,7 @@ def welcome_page():
         
         st.markdown(
             """
-            ### Martin Blomqvist – Om mig och projektet
+            ### Om mig och projektet
 
             Jag heter **Martin Blomqvist** och drivs av att förstå och förbättra komplexa system. Min bakgrund är bred – jag har arbetat i vitt skilda miljöer, från **ekologiskt jordbruk** till avancerad **dataanalys**. Oavsett sammanhang har fokus alltid legat på detsamma: att **hitta den dolda strukturen** i kaoset och bygga lösningar som fungerar i den verkliga världen.
             
@@ -594,19 +594,28 @@ elif page == "Språkbruk & Retorik":
             with cols[i % 4]:
                 raw_text_blob = " ".join(df[df["parti"] == party]["text"].dropna().tolist())
                 cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
-                if cleaned_text_for_cloud:
+
+                if not raw_text_blob.strip():
+                    st.write(f"**{party}** (Ingen data)")
+                elif not cleaned_text_for_cloud.strip():
+                    st.write(f"**{party}** (För lite text efter rensning)")
+                else:
                     try:
-                        wc = WordCloud(width=400, height=300, background_color="white", collocations=False).generate(cleaned_text_for_cloud)
+                        wc = WordCloud(
+                            width=400,
+                            height=300,
+                            background_color="white",
+                            collocations=False
+                        ).generate(cleaned_text_for_cloud)
                         st.write(f"**{party}**")
                         fig_wc, ax = plt.subplots(figsize=(4, 3))
                         ax.imshow(wc, interpolation='bilinear')
                         ax.axis("off")
-                        st.pyplot(fig_wc)
+                        st.pyplot(fig_wc, bbox_inches='tight', dpi=fig_wc.dpi)
                         plt.close(fig_wc)
-                    except Exception:
-                        st.error(f"Kunde inte generera moln för {party}.")
-                else:
-                    st.write(f"**{party}** (För lite text)")
+                    except Exception as e:
+                        st.error(f"Kunde inte generera moln för {party}: {e}")
+
 
 elif page == "Evaluering":
     st.header("Automatisk Testbänk: Prediktion på partiernas egna texter")
@@ -795,10 +804,14 @@ elif page == "Historik":
                     st.write(f"**{party}** (Ingen data)")
                     continue
 
-                raw_text_blob = " ".join(df_party["text"].dropna().tolist())
+                raw_text_blob = " ".join(df[df["parti"] == party]["text"].dropna().tolist())
                 cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
 
-                if cleaned_text_for_cloud:
+                if not raw_text_blob.strip():
+                    st.write(f"**{party}** (Ingen data)")
+                elif not cleaned_text_for_cloud.strip():
+                    st.write(f"**{party}** (För lite text efter rensning)")
+                else:
                     try:
                         wc = WordCloud(
                             width=400,
@@ -812,7 +825,5 @@ elif page == "Historik":
                         ax.axis("off")
                         st.pyplot(fig_wc, bbox_inches='tight', dpi=fig_wc.dpi)
                         plt.close(fig_wc)
-                    except Exception:
-                        st.error(f"Kunde inte generera moln för {party}.")
-                else:
-                    st.write(f"**{party}** (För lite text)")
+                    except Exception as e:
+                        st.error(f"Kunde inte generera moln för {party}: {e}")
