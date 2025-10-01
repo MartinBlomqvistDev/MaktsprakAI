@@ -765,10 +765,9 @@ elif page == "Historik":
     fig.update_traces(hovertemplate='%{y:.1f}% av partiets tal')
 
     st.plotly_chart(fig, config={"responsive": True})
-
     st.divider()
 
-    # --- WordClouds per parti (på efterfrågan) ---
+    # --- WordClouds per parti (helt separerat) ---
     st.subheader("Jämför partiernas vanligaste ord")
     st.markdown("Välj tidsperiod nedan för ordmoln (genereras endast på begäran).")
 
@@ -790,21 +789,28 @@ elif page == "Historik":
     )
 
     start, end = time_periods_for_cloud[period_for_cloud]
-    df_all_data_cloud = fetch_speeches_historical(start, end)[['text', 'parti']]
 
-    if df_all_data_cloud.empty:
+    # --- Separat fetch för WordCloud, helt oberoende ---
+    @st.cache_data(ttl=1800)
+    def fetch_data_for_wordcloud(start_date, end_date):
+        df = fetch_speeches_historical(start_date, end_date)
+        return df[['text', 'parti']]
+
+    df_wc = fetch_data_for_wordcloud(start, end)
+
+    if df_wc.empty:
         st.warning(f"Ingen data hittades för ordmoln under '{period_for_cloud}'.")
     else:
         st.markdown(f"**Visar ordmoln baserat på tal under perioden: {period_for_cloud}**")
         cols = st.columns(4)
         for i, party in enumerate(PARTY_ORDER):
             with cols[i % 4]:
-                df_party = df_all_data_cloud[df_all_data_cloud['parti'] == party]
+                df_party = df_wc[df_wc['parti'] == party]
                 if df_party.empty:
                     st.write(f"**{party}** (Ingen data)")
                     continue
 
-                raw_text_blob = " ".join(df_all_data_cloud[df_all_data_cloud["parti"] == party]["text"].dropna().tolist())
+                raw_text_blob = " ".join(df_party["text"].dropna().tolist())
                 cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
 
                 if not raw_text_blob.strip():
