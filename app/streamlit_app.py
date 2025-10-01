@@ -714,7 +714,7 @@ elif page == "Historik":
         return apply_ton_lexicon(df, text_col=text_col, lexicon_path=lexicon_path)
 
     # --- Hämta historisk data ---
-    with st.spinner(f"Hämtar och analyserar historisk data ({MAX_YEARS} år)…"):
+    with st.spinner(f"Hämtar och analyserar historisk data för de senaste {MAX_YEARS} åren… Tack för tålamodet!"):
         df_all_data = fetch_speeches_historical("2015-01-01", today)
         if df_all_data.empty:
             st.warning(f"Ingen data inom {START_DATE_LIMIT.year} till {today.year}.")
@@ -769,7 +769,7 @@ elif page == "Historik":
 
     # --- WordClouds per parti (helt separerat) ---
     st.subheader("Jämför partiernas vanligaste ord")
-    st.markdown("Välj tidsperiod nedan för ordmoln (genereras endast på begäran).")
+    st.markdown("Välj tidsperiod nedan för ordmoln:")
 
     time_periods_for_cloud = {
         "Senaste 10 åren": (today - timedelta(days=365*10), today),
