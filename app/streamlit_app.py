@@ -687,12 +687,10 @@ elif page == "Evaluering":
         st.divider()
         st.subheader("Felsökningslogg")
         st.code("\n".join(debug_log), language="text")
-
 elif page == "Historik":
     st.header("Analysera retorikens utveckling över tid")
     from datetime import date, timedelta
 
-    # --- 1. Definiera tidsgräns och dagens datum ---
     MAX_YEARS = 10
     today = date.today()
     START_DATE_LIMIT = today - timedelta(days=365 * MAX_YEARS)
@@ -708,68 +706,60 @@ elif page == "Historik":
         key="historic_category_select"
     )
 
-    # --- Funktion med cache för lexikonanalys ---
-    @st.cache_data
-    def compute_lexicon(df, text_col, lexicon_path):
-        return apply_ton_lexicon(df, text_col=text_col, lexicon_path=lexicon_path)
+    # --- Lazy load graf via expander eller knapp ---
+    with st.expander("Visa retoriktrend per parti"):
+        if st.button("Generera graf"):
+            with st.spinner(f"Hämtar och analyserar historisk data för de senaste {MAX_YEARS} åren…"):
+                df_all_data = fetch_speeches_historical("2015-01-01", today)
+                if df_all_data.empty:
+                    st.warning(f"Ingen data inom {START_DATE_LIMIT.year} till {today.year}.")
+                    st.stop()
 
-    # --- Hämta historisk data ---
-    with st.spinner(f"Hämtar och analyserar historisk data för de senaste {MAX_YEARS} åren… Tack för tålamodet!"):
-        df_all_data = fetch_speeches_historical("2015-01-01", today)
-        if df_all_data.empty:
-            st.warning(f"Ingen data inom {START_DATE_LIMIT.year} till {today.year}.")
-            st.stop()
+                # Robust datumhantering & filtrera tidigt
+                df_all_data['protokoll_datum'] = pd.to_datetime(df_all_data['protokoll_datum'], errors='coerce')
+                valid_dates_df = df_all_data.dropna(subset=['protokoll_datum'])
+                valid_dates_df = valid_dates_df[valid_dates_df['protokoll_datum'] >= pd.Timestamp(START_DATE_LIMIT)]
+                if valid_dates_df.empty:
+                    st.warning("Hittade inga giltiga datum efter filtrering.")
+                    st.stop()
 
-        # --- Robust datumhantering & filtrera tidigt ---
-        df_all_data['protokoll_datum'] = pd.to_datetime(df_all_data['protokoll_datum'], errors='coerce')
-        valid_dates_df = df_all_data.dropna(subset=['protokoll_datum'])
-        valid_dates_df = valid_dates_df[valid_dates_df['protokoll_datum'] >= pd.Timestamp(START_DATE_LIMIT)]
+                # Lexikonanalys med cache
+                @st.cache_data
+                def compute_lexicon(df, text_col, lexicon_path):
+                    return apply_ton_lexicon(df, text_col=text_col, lexicon_path=lexicon_path)
 
-        if valid_dates_df.empty:
-            st.warning("Hittade inga giltiga datum efter filtrering.")
-            st.stop()
+                df_ton = compute_lexicon(valid_dates_df, text_col="text", lexicon_path=LEXICON_PATH)
 
-        # --- Lexikonanalys med cache ---
-        df_ton = compute_lexicon(valid_dates_df, text_col="text", lexicon_path=LEXICON_PATH)
+                # Aggregera per år
+                df_ton['År'] = df_ton['protokoll_datum'].dt.to_period('Y')
+                df_plot_yearly = df_ton.groupby(['parti', 'År'], observed=False)[category_to_track].mean().reset_index()
+                df_plot_yearly['År'] = df_plot_yearly['År'].astype(str).str.split('-').str[0].astype(int)
+                df_plot_yearly[category_to_track] = df_plot_yearly[category_to_track] * 100
+                unique_years = sorted(df_plot_yearly['År'].unique())
 
-        # --- Aggregera per år ---
-        df_ton['År'] = df_ton['protokoll_datum'].dt.to_period('Y')
-        df_plot_yearly = df_ton.groupby(['parti', 'År'], observed=False)[category_to_track].mean().reset_index()
-        df_plot_yearly['År'] = df_plot_yearly['År'].astype(str).str.split('-').str[0].astype(int)
-        df_plot_yearly[category_to_track] = df_plot_yearly[category_to_track] * 100
-        unique_years = sorted(df_plot_yearly['År'].unique())
+                # --- Visualisering ---
+                fig = px.line(
+                    df_plot_yearly,
+                    x="År",
+                    y=category_to_track,
+                    color="parti",
+                    markers=True,
+                    title=f"Trend: '{category_to_track}' per parti över tid"
+                )
+                fig.update_xaxes(title_text="År", tickvals=unique_years, ticktext=[str(y) for y in unique_years], showgrid=True)
+                fig.update_yaxes(
+                    title_text=f"% av partiets tal med kategori '{category_to_track}'",
+                    range=[df_plot_yearly[category_to_track].min() * 0.9,
+                           df_plot_yearly[category_to_track].max() * 1.1]
+                )
+                fig.update_traces(hovertemplate='%{y:.1f}% av partiets tal')
+                st.plotly_chart(fig, config={"responsive": True})
 
-    # --- Visualisering ---
-    st.subheader(f"Utveckling av retoriken: '{category_to_track}'")
-    st.markdown(f"Visar trenden för de senaste {MAX_YEARS} åren med årlig upplösning.")
-
-    fig = px.line(
-        df_plot_yearly,
-        x="År",
-        y=category_to_track,
-        color="parti",
-        markers=True,
-        title=f"Trend: '{category_to_track}' per parti över tid"
-    )
-    fig.update_xaxes(
-        title_text="År",
-        tickvals=unique_years,
-        ticktext=[str(year) for year in unique_years],
-        showgrid=True
-    )
-    fig.update_yaxes(
-        title_text=f"% av partiets tal med kategori '{category_to_track}'",
-        range=[df_plot_yearly[category_to_track].min() * 0.9,
-               df_plot_yearly[category_to_track].max() * 1.1]
-    )
-    fig.update_traces(hovertemplate='%{y:.1f}% av partiets tal')
-
-    st.plotly_chart(fig, config={"responsive": True})
     st.divider()
 
-    # --- WordClouds per parti (helt separerat) ---
+    # --- WordClouds per parti (helt separat) ---
     st.subheader("Jämför partiernas vanligaste ord")
-    st.markdown("Välj tidsperiod nedan för ordmoln:")
+    st.markdown("Genereras endast när du klickar på knappen.")
 
     time_periods_for_cloud = {
         "Senaste 10 åren": (today - timedelta(days=365*10), today),
@@ -781,55 +771,39 @@ elif page == "Historik":
     }
 
     period_options_reversed = list(time_periods_for_cloud.keys())[::-1]
-    period_for_cloud = st.selectbox(
-        "Välj period för ordmolnen:",
-        period_options_reversed,
-        index=0,
-        key="all_party_period_select"
-    )
+    period_for_cloud = st.selectbox("Välj period för ordmolnen:", period_options_reversed, index=0, key="all_party_period_select")
 
-    start, end = time_periods_for_cloud[period_for_cloud]
+    if st.button("Generera ordmoln"):
+        start, end = time_periods_for_cloud[period_for_cloud]
 
-    # --- Separat fetch för WordCloud, helt oberoende ---
-    @st.cache_data(ttl=1800)
-    def fetch_data_for_wordcloud(start_date, end_date):
-        df = fetch_speeches_historical(start_date, end_date)
-        return df[['text', 'parti']]
+        @st.cache_data(ttl=1800)
+        def fetch_data_for_wordcloud(start_date, end_date):
+            df = fetch_speeches_historical(start_date, end_date)
+            return df[['text', 'parti']]
 
-    df_wc = fetch_data_for_wordcloud(start, end)
+        df_wc = fetch_data_for_wordcloud(start, end)
+        if df_wc.empty:
+            st.warning(f"Ingen data hittades för ordmoln under '{period_for_cloud}'.")
+        else:
+            st.markdown(f"**Ordmoln baserat på tal under perioden: {period_for_cloud}**")
+            cols = st.columns(4)
+            for i, party in enumerate(PARTY_ORDER):
+                with cols[i % 4]:
+                    df_party = df_wc[df_wc['parti'] == party]
+                    if df_party.empty:
+                        st.write(f"**{party}** (Ingen data)")
+                        continue
 
-    if df_wc.empty:
-        st.warning(f"Ingen data hittades för ordmoln under '{period_for_cloud}'.")
-    else:
-        st.markdown(f"**Visar ordmoln baserat på tal under perioden: {period_for_cloud}**")
-        cols = st.columns(4)
-        for i, party in enumerate(PARTY_ORDER):
-            with cols[i % 4]:
-                df_party = df_wc[df_wc['parti'] == party]
-                if df_party.empty:
-                    st.write(f"**{party}** (Ingen data)")
-                    continue
+                    raw_text_blob = " ".join(df_party["text"].dropna().tolist())
+                    cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
+                    if not cleaned_text_for_cloud.strip():
+                        st.write(f"**{party}** (För lite text efter rensning)")
+                        continue
 
-                raw_text_blob = " ".join(df_party["text"].dropna().tolist())
-                cleaned_text_for_cloud = preprocess_for_wordcloud(raw_text_blob)
-
-                if not raw_text_blob.strip():
-                    st.write(f"**{party}** (Ingen data)")
-                elif not cleaned_text_for_cloud.strip():
-                    st.write(f"**{party}** (För lite text efter rensning)")
-                else:
-                    try:
-                        wc = WordCloud(
-                            width=400,
-                            height=300,
-                            background_color="white",
-                            collocations=False
-                        ).generate(cleaned_text_for_cloud)
-                        st.write(f"**{party}**")
-                        fig_wc, ax = plt.subplots(figsize=(4, 3))
-                        ax.imshow(wc, interpolation='bilinear')
-                        ax.axis("off")
-                        st.pyplot(fig_wc, bbox_inches='tight', dpi=fig_wc.dpi)
-                        plt.close(fig_wc)
-                    except Exception as e:
-                        st.error(f"Kunde inte generera moln för {party}: {e}")
+                    wc = WordCloud(width=400, height=300, background_color="white", collocations=False).generate(cleaned_text_for_cloud)
+                    st.write(f"**{party}**")
+                    fig_wc, ax = plt.subplots(figsize=(4, 3))
+                    ax.imshow(wc, interpolation='bilinear')
+                    ax.axis("off")
+                    st.pyplot(fig_wc, bbox_inches='tight', dpi=fig_wc.dpi)
+                    plt.close(fig_wc)
