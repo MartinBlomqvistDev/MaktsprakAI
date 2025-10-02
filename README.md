@@ -21,19 +21,23 @@ Projektet använder en **modulär arkitektur** där all återanvändbar logik li
 
 ```bash
 /MaktsprakAI
-├── src/                  # Kärnlogik för återanvändning (Biblioteksmodul)
+├── src/
 │   └── maktsprak_pipeline/
-│       ├── config.py     # Centraliserad konfiguration och Secrets-läsning
-│       ├── db.py         # Hanterar PostgreSQL/Supabase-anslutning
-│       ├── etl.py        # Data-pipeline (Extract, Transform, Load)
-│       ├── nlp.py        # Text- och lingvistisk behandling
-│       └── model.py      # Hanterar AI-modellens I/O
+│       ├── __init__.py       # Initierar paketet
+│       ├── config.py         # Centraliserad konfiguration och Secrets-läsning
+│       ├── db.py             # PostgreSQL/Supabase-anslutning
+│       ├── etl.py            # Data-pipeline: Extract, Transform, Load
+│       ├── nlp.py            # Text- och lingvistisk behandling
+│       ├── model.py          # Hanterar AI-modellens I/O
+│       └── logger.py         # Central loggning för pipeline och app
 ├── app/
-│   └── streamlit_app.py  # Deployment-applikationen
+│   └── streamlit_app.py      # Deployment-applikationen
 ├── scripts/
-│   └── train_party_model_db.py # Skript för att träna/generera modellen
-├── requirements.txt      # Python-beroenden för molnet
-└── .env                  # MILJÖVARIABLER (Ignoreras av Git!)
+│   ├── train_party_model_db.py   # Tränar BERT-modellen
+│   └── create_historic_database.py  # Skapar historisk Parquet-dump och laddar till Supabase
+├── main.py                   # Huvudkörning för pipeline och tester
+├── requirements.txt          # Python-beroenden för molnet
+└── .env                      # Ignoreras av git (Secrets)
 ```
 ---
 

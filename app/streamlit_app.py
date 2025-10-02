@@ -724,7 +724,7 @@ elif page == "Historik":
                     st.stop()
 
                 # Lexikonanalys med cache
-                @st.cache_data
+                @st.cache_data(show_spinner=False)
                 def compute_lexicon(df, text_col, lexicon_path):
                     return apply_ton_lexicon(df, text_col=text_col, lexicon_path=lexicon_path)
 
