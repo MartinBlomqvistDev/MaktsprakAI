@@ -313,7 +313,8 @@ def welcome_page():
         col3.metric("Senaste anförande", latest_speech_date)
     
         st.divider()
-        
+        st.info("⚡ Notera: Denna demo körs på gratisnivån i Supabase. Vid hög belastning kan laddningen ta lite längre tid. I en skarp miljö körs appen på en skalbar molnplan för full stabilitet.")
+
         st.markdown(
             """
             ### Om mig och projektet
