@@ -313,6 +313,7 @@ def welcome_page():
         col3.metric("Senaste anförande", latest_speech_date)
     
         st.divider()
+        st.info("⚡ Notera: Denna demo körs på gratisnivån i Supabase. Vid hög belastning kan laddningen ta lite längre tid. I en skarp miljö körs appen på en skalbar molnplan för full stabilitet.")
 
         st.markdown(
             """
@@ -396,8 +397,6 @@ def welcome_page():
                 st.markdown(news_html, unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Ett fel uppstod vid hämtning av nyheter.")
-    st.info("⚡ Notera: Denna demo körs på gratisnivån i Supabase. Vid hög belastning kan laddningen ta lite längre tid. I en skarp miljö körs appen på en skalbar molnplan för full stabilitet.")
-
 
 
 # =====================
