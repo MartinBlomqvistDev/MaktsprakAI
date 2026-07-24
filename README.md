@@ -25,7 +25,7 @@ Every headline number here is one a validation leak would have inflated. I found
 
 A party classifier is trivial to over-report, and this project did over-report, publicly, before catching it.
 
-The first version scored **0.776 macro-F1** with a plain row-based train/test split. That split leaves the *same politicians* on both sides, so the model partly learns to recognise **individual phrasing** rather than **party rhetoric**. It answers "does this sound like Magdalena Andersson?", not "does this sound like Socialdemokraterna?".
+The first version scored **0.775 macro-F1** with a plain row-based train/test split. That split leaves the *same politicians* on both sides, so the model partly learns to recognise **individual phrasing** rather than **party rhetoric**. It answers "does this sound like Magdalena Andersson?", not "does this sound like Socialdemokraterna?".
 
 Re-scored with a **speaker-independent split** (15% of politicians held out entirely, so every evaluated speech comes from someone the model has never seen), the honest figure is **0.619**. Against a 0.125 random baseline for 8 classes, and with the same corpus reaching a similar ceiling under a Random Forest, that is real signal, not noise.
 
