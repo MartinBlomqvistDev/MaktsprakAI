@@ -48,11 +48,17 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 \
             -X POST https://maktsprak.se/api/predict \
             -H 'Content-Type: application/json' \
-            -d '{"text":"Uppvärmning av inferenstjänsten."}')
+            -d '{"text":"Uppvärmning av inferenstjänsten."}' || echo "000")
           echo "predict -> HTTP $code in $(( $(date +%s) - start ))s"
           # A cold start can outrun the timeout, and the site being briefly
           # unreachable is not something to wake anyone over. Warn, do not fail:
           # a red X on this workflow would be noise, not signal.
+          #
+          # The `|| echo "000"` is what makes that possible. The step runs under
+          # `bash -e`, so a curl that times out (exit 28) would take the whole
+          # step down on the assignment line, before this guard could ever run.
+          # 000 is also what curl reports when no response arrived, so the
+          # warning below stays truthful.
           if [ "$code" != "200" ]; then
             echo "::warning::keep-warm got HTTP $code"
           fi
