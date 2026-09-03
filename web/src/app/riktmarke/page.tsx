@@ -11,8 +11,11 @@ const LLM_URL = "https://maktsprak.se/llm";
 
 // Benchmark 2026-07-20: the DEPLOYED classifier vs six frontier LLMs on 320
 // speeches (2015-2026) by the 146 speakers held out of training. Split verified
-// clean: 0.591 on held-out speakers vs 0.995 on training speakers. Same 2000-char
-// input for everyone. LLM cost from actual tokens via OpenRouter.
+// clean: 0.591 on held-out speakers vs 0.995 on training speakers. Every model
+// reads KB-BERT's own 512-token window (_kb_window in llm_classify_benchmark.py),
+// so no LLM sees more of the speech than the 110M model can. The 2000-character
+// window is a separate robustness run, in benchmark_results_2000char.csv.
+// LLM cost from actual tokens via OpenRouter.
 const ROWS: { name: string; acc: number; f1: number; cost: number; local?: boolean }[] = [
   { name: "GPT-5.5", acc: 0.762, f1: 0.76, cost: 3.73 },
   { name: "Claude Opus 4.8", acc: 0.719, f1: 0.718, cost: 5.62 },
